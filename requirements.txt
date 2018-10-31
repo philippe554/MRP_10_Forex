@@ -1,0 +1,2 @@
+# Required for fxcm REST api connection
+fxcmpy=1.1.33
