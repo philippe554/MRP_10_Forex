@@ -3,40 +3,41 @@ import fxcmpy
 
 
 class Client:
+    connection = None
 
     def __init__(self):
         self.connection = None
 
-    def login(self):
-        """
-        Initialize a connection to the fxcm platform
-        Returns the connection. Call con.close() to exit the connection
-        """
+    @staticmethod
+    def get_connection():
         try:
-            # Return existing connection
-            if self.test_connection():
-                return self.connection
-
-            # Open a new connection
-            token = cfg.forexconnect['token']
-            self.connection = fxcmpy.fxcmpy(access_token=token, log_level='error')
-            if self.connection.connection_status != 'established':
-                raise Exception("Unable to establish forex connection")
-            return self.connection
+            if Client.test_connection():
+                # Return existing connection
+                return Client.connection
+            else:
+                # Open a new connection
+                token = cfg.forexconnect['token']
+                connection = fxcmpy.fxcmpy(access_token=token, log_level='error')
+                if not connection.is_connected():
+                    raise Exception("Unable to establish forex connection")
+                Client.connection = connection
+                return Client.connection
         except Exception as e:
             print(e)
             return False
 
-    def logout(self):
+    @staticmethod
+    def logout():
         try:
-            if self.test_connection():
-                self.connection.close()
-            self.connection = None
+            if Client.test_connection():
+                Client.connection.close()
+            Client.connection = None
         except:
             return False
         return True
 
-    def test_connection(self):
-        if self.connection is not None and self.connection.connection_status == 'established':
+    @staticmethod
+    def test_connection():
+        if Client.connection is not None and Client.connection.is_connected():
             return True
         return False
