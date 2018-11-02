@@ -5,7 +5,8 @@ from App.Library.Enum.Period import Period
 
 import datetime
 
-class TestForexConnection(unittest.TestCase):
+
+class TestPrice(unittest.TestCase):
 
     def test_get_last_n_candles(self):
         candles = Price.get_last_n_candles(instrument='EUR/USD', period=Period.MINUTE_1[0], n=30)

@@ -2,7 +2,7 @@ import unittest
 from App.Library.Connection.Client import Client
 
 
-class TestForexConnection(unittest.TestCase):
+class TestClient(unittest.TestCase):
 
     def test_login(self):
         conn = Client.get_connection()

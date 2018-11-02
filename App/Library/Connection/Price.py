@@ -20,7 +20,7 @@ class Price:
 
     @staticmethod
     def get_candles_from_interval(
-            instrument=cfg.instrument, period=Period.MINUTE_1[0],
+            instrument=cfg.instrument, period=Period.DAY_1[0],
             start=datetime.datetime(2018,6,20), stop=datetime.datetime(2018,10,20)):
         """
         Returns all candles in the given interval

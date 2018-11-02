@@ -2,8 +2,11 @@
 This repository contains an algorithm which is able to predict the Forex market perfectly.
 
 ### Dependencies
-- Python 3.7.1
-- Install the dependencies by running this command in your terminal (python should be added to your PATH): python -m pip install -r requirements.txt
+Tested on Python 3.6.4.
+Install the dependencies by running this command in your terminal (python should be added to your PATH):
+```
+python -m pip install -r requirements.txt
+```
 
 ### FXCM
 We connect to a Forex demo account using fxcm
