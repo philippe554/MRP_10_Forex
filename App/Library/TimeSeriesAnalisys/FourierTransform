@@ -1,0 +1,44 @@
+
+####
+
+# Source: https://gist.github.com/tartakynov/83f3cd8f44208a1856ce
+
+####
+
+import pandas as pd
+import numpy as np
+from numpy import fft
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("2018oct.csv", delimiter=";")
+x = df['BarCLOSEBid']
+
+def fourierExtrapolation(x, n_predict):
+    n = x.size
+    n_harm = 10  # number of harmonics in model
+    t = np.arange(0, n)
+    p = np.polyfit(t, x, 1)  # find linear trend in x
+    x_notrend = x - p[0] * t  # detrended x
+    x_freqdom = fft.fft(x_notrend)  # detrended x in frequency domain
+    f = fft.fftfreq(n)  # frequencies
+    indexes = list(range(n))
+    # sort indexes by frequency, lower -> higher
+    indexes.sort(key=lambda i: np.absolute(f[i]))
+
+    t = np.arange(0, n + n_predict)
+    restored_sig = np.zeros(t.size)
+    for i in indexes[:1 + n_harm * 2]:
+        ampli = np.absolute(x_freqdom[i]) / n  # amplitude
+        phase = np.angle(x_freqdom[i])  # phase
+        restored_sig += ampli * np.cos(2 * np.pi * f[i] * t + phase)
+    return restored_sig + p[0] * t
+
+train = x[:int(len(x)*0.8)]
+test = x[int(len(x)*0.8):]
+n_predict = len(test)
+
+extrapolation = fourierExtrapolation(train, n_predict)
+plt.plot(np.arange(0, train.size), train, 'b', label = 'x', linewidth = 1)
+plt.plot(np.arange(train.size, train.size + test.size), test, 'g', label = 'x', linewidth = 1)
+plt.plot(np.arange(0, extrapolation.size), extrapolation, 'r', label = 'extrapolation')
+plt.show()
