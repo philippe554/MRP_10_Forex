@@ -31,9 +31,42 @@ class AccessDB:
                 df = new_value
             else:
                 df = df.append(new_value, ignore_index=True)
+
             if new_value.size < self.size:
                 done = True
 
             new_offset += self.size
         return df
 
+    """
+    Get columns from the database with all the technical indicators only for a window at the end of the DB
+    @columns Array of strings with the name of the columns to extract
+    @return Pandas object with the required columns
+    """
+    def get_end_window_column(self, columns, window_size):
+
+        done = False
+
+        conn = sqlite3.connect(inputFile)
+        n_rows = pd.read_sql_query("SELECT Count(*) FROM price_hist", conn)
+
+        first_offset = n_rows.values[0][0] - window_size
+        new_offset = first_offset
+
+        while not done:
+            # print("next batch: " + new_offset.__str__())
+            conn = sqlite3.connect(inputFile)
+            new_value = pd.read_sql_query("SELECT " + ','.join(columns) + " FROM price_hist LIMIT "
+                                          + self.size.__str__() + " OFFSET " + new_offset.__str__(), conn)
+
+            if new_offset is first_offset:
+                df = new_value
+            else:
+                df = df.append(new_value, ignore_index=True)
+
+            if new_value.size < self.size:
+                done = True
+
+            new_offset += self.size
+
+        return df
