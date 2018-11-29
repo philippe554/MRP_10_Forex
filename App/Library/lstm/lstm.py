@@ -18,8 +18,8 @@ variables = {
     'l1b': tf.Variable(tf.random_normal([l1Size])),
     'l2': tf.Variable(tf.random_normal([l1Size, l2Size])),
     'l2b': tf.Variable(tf.random_normal([l2Size])),
-    'l3': tf.Variable(tf.random_normal([20, 2])),
-    'l3b': tf.Variable(tf.random_normal([2]))
+    'l3': tf.Variable(tf.random_normal([lstmSize, outputSize])),
+    'l3b': tf.Variable(tf.random_normal([outputSize]))
 }
 
 def check(M, l):
@@ -31,6 +31,9 @@ def batchMatMul(M, N):
     return tf.reshape(tf.reshape(M, [-1, M.get_shape()[-1]]) @ N, [-1, M.get_shape()[-2], N.get_shape()[-1]])
 
 def buildNN(x):
+    # x is input of neural network, size: (Batch size * Amount of timesteps * amount of technical indicators)
+
+    # Feed forward layer. (batchMatMul is a TF trick to not have to split it)
     x = tf.nn.relu(batchMatMul(x, variables['l1']) + variables['l1b'])
     check(x, [None, sequenceSize, l1Size])
 
@@ -47,6 +50,8 @@ def buildNN(x):
     check(x, [None, sequenceSize, outputSize])
 
     return x
+
+# TODO: to some non-lazy guy: put these classes in separate files
 
 class PSO:
     def __init__(self, amountOfParticles, dims):
@@ -91,11 +96,14 @@ class PSO:
 
 class FOREX:
     def getX(self):
-        return np.random.rand(batchSize, sequenceSize, inputSize)
+        X = np.random.rand(batchSize, sequenceSize, inputSize)
+        price = np.random.rand(batchSize, sequenceSize)
+        return X, price
 
-    def calcProfit(self, x, y):
-        assert list(np.shape(x)) == [batchSize, sequenceSize, inputSize]
-        assert list(np.shape(y)) == [batchSize, sequenceSize, outputSize]
+    def calcProfit(self, price, Y):
+        assert list(np.shape(price)) == [batchSize, sequenceSize]
+        assert list(np.shape(Y)) == [batchSize, sequenceSize, outputSize]
+
         return np.random.rand(1)
 
 y = buildNN(x)
@@ -113,7 +121,7 @@ with tf.Session() as sess:
 
     for e in range(amountOfEpochs):
         w = pso.getParticles()
-        X = forex.getX()
+        X, price = forex.getX()
         f = np.zeros(amountOfParticles)
 
         for p in range(amountOfParticles):
@@ -122,9 +130,11 @@ with tf.Session() as sess:
             for i in range(len(ws)):
                 variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
+            # small x is the placeholder of the tensorflow graph
+            # big X is the sample data of the FOREX class
             Y = sess.run(y, feed_dict={x: X})
 
-            f[p] = forex.calcProfit(X, Y)
+            f[p] = forex.calcProfit(price, Y)
 
         # negate profit, because PSO is cost based
         pso.update(-f)
