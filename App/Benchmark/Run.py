@@ -1,34 +1,38 @@
 import numpy as np
-from numpy import genfromtxt
-from Fibonacci import Fibonacci as Fib
-from Trade import Trade as T
-from Levels import Levels as L
-from Trend import Trend as TR
-from Buy_And_Sell import Buy_And_Sell as BAS
+import threading
 
-#my_data1 = genfromtxt("EURUSD_Candlestick_1_M_BID_01.09.2018-30.09.2018.csv", delimiter=',')
-#my_data2 = genfromtxt("EURUSD_Candlestick_1_M_BID_01.10.2018-31.10.2018.csv", delimiter=',')
-my_data = genfromtxt("EURUSD_Candlestick_1_M_BID_01.10.2017-30.09.2018.csv", delimiter=',')
-#my_data = np.concatenate((my_data1, my_data2))
-trend_array = []
-level = None
-balance_EUR = 10000
-balance_USD = 0
-trade_values = None
-count = 0
-buy_sell = None
-old = [0] * 2
+from numpy import genfromtxt
+from App.Benchmark.Fibonacci import Fibonacci as Fib
+from App.Benchmark.Trade import Trade as T
+from App.Benchmark.Levels import Levels as L
+from App.Benchmark.Trend import Trend as TR
+from App.Benchmark.Buy_And_Sell import Buy_And_Sell as BAS
+from App.Library.Connection.Price import Price
+
+
+tren_array = []
+levels = None
+bal_EUR = 10000
+bal_USD = 0
+trad_values = None
+c = 0
+buy_s = None
+o = [0] * 2
+i2 = 0
+b = -50
 
 # 1260 as a window size works well
 
 
-for i in range(len(my_data)-1260):
-    window = my_data[i:1260+i]
+def run(count, trade_values, buy_sell, level, i, trend_array, balance_EUR, balance_USD, old, bound):
+
+    candles = np.array(Price.get_last_n_candles(instrument='EUR/USD', period='m1', n=1260))
+    window = candles
     fibonacci = Fib(window)
 
     if count == 5:
-         trade_values.limit = 0
-         count = 0
+        trade_values.limit = 0
+        count = 0
 
     if trade_values is not None and buy_sell is not None:
         balance_EUR, balance_USD, activated = buy_sell.activate_stop_loss(window[-1][4])
@@ -81,5 +85,21 @@ for i in range(len(my_data)-1260):
         elif sum(trend_array[:7]) < 4:
             trend_array = []
 
-print(i)
-print(balance_EUR, balance_USD, my_data[-1][4])
+    i = i+1
+    print(i)
+    print(balance_EUR, balance_USD, candles[-1][1])
+    print(len(trend_array))
+    return count, trade_values, buy_sell, level, i, trend_array, balance_EUR, balance_USD, old, bound
+
+
+import time
+
+while True:
+    c, trad_values, buy_s, levels, i2, tren_array, bal_EUR, bal_USD, o, b = run(c, trad_values, buy_s, levels, i2,
+                                                                                tren_array, bal_EUR, bal_USD, o, b)
+    time.sleep(60)
+
+
+
+# print(i2)
+# print(balance_EUR, balance_USD, candles[-1][4])

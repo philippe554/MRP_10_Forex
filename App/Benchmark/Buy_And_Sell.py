@@ -1,6 +1,6 @@
 class Buy_And_Sell:
     def __init__(self, value, limit, balance_EUR, balance_USD, old):
-        self.value = value[4]
+        self.value = value[1]
         self.limit = limit
         self.balance_USD = balance_USD
         self.balance_EUR = balance_EUR

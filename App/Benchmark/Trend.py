@@ -10,7 +10,7 @@ class Trend:
 
     def get_levels(self):
         if self.L1 == 0 and self.L2 == 23.6:
-            return self.F.low.min(),  self.F.fib_23_6
+            return self.F.low,  self.F.fib_23_6
         elif self.L1 == 23.6 and self.L2 == 38.2:
             return self.F.fib_23_6, self.F.fib_38_2
         elif self.L1 == 38.2 and self.L2 == 50:
@@ -20,11 +20,11 @@ class Trend:
         elif self.L1 == 61.8 and self.L2 == 76.4:
             return self.F.fib_61_8, self.F.fib_76_4
         else:
-            return self.F.fib_76_4, self.F.high.max()
+            return self.F.fib_76_4, self.F.high
 
     def check_thresh(self, value):
-        diff_with_upper = self.update_upper - value[4]
-        diff_with_lower = value[4] - self.update_lower
+        diff_with_upper = self.update_upper - value[1]
+        diff_with_lower = value[1] - self.update_lower
         min_diff = min(diff_with_lower, diff_with_upper)
 
         if 0 < min_diff < self.threshold:
@@ -37,7 +37,8 @@ class Trend:
         else:
             result = 0, 0
 
-        if value[4] - self.update_lower >= self.threshold and self.update_upper - value[4] >= self.threshold:
+        if value[1] - self.update_lower >= self.threshold and self.update_upper - \
+                value[1] >= self.threshold:
             result = 2, 3
 
         return result
