@@ -77,8 +77,14 @@ class Order:
         :raises ValueError when the position can not be found
         """
         conn = Client.get_connection(connection, True)
-        position = conn.get_open_position(trade_id)
-        position.close()
+
+        try:
+            position = conn.get_open_position(trade_id)
+            position.close()
+        except ValueError:
+            # position not found, stoploss might have been called. try for closed position instead
+            position = conn.get_closed_position(trade_id)
+
         return position
 
     @staticmethod

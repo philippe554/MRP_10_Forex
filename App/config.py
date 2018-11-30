@@ -4,9 +4,8 @@ forexconnect = dict(
         token='a459da43b4dd47cdc23b8762ccc3d54043d78465'
     ),
     lstm=dict(
-        # TODO: create a token for the lstm account
-        # https://www.fxcm.com/uk/algorithmic-trading/forex-python/
-        token='a459da43b4dd47cdc23b8762ccc3d54043d78465'
+        # Demo account camiel2
+        token='953daaba402acf5241cfb354c9d95e394e9c5089'
     )
 )
 

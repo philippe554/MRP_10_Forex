@@ -7,10 +7,10 @@ class TestOrder(unittest.TestCase):
 
     def test_buy_sell(self):
         # Place a buy order
-        position = Order.buy(amount=100)
+        position = Order.buy(amount=100, connection='benchmark')
 
         # Close the position (sell)
-        position = Order.close_position(position.get_tradeId())
+        position = Order.close_position(trade_id=position.get_tradeId(), connection='benchmark')
         profit = position.get_grossPL()
 
         self.assertEqual(True, True)
