@@ -9,14 +9,14 @@ class Client:
         self.connection = None
 
     @staticmethod
-    def get_connection():
+    def get_connection(connection_type='benchmark', force_new=False):
         try:
-            if Client.test_connection():
+            if not force_new and Client.test_connection():
                 # Return existing connection
                 return Client.connection
             else:
                 # Open a new connection
-                token = cfg.forexconnect['token']
+                token = cfg.forexconnect[connection_type]['token']
                 connection = fxcmpy.fxcmpy(access_token=token, log_level='error')
                 if not connection.is_connected():
                     raise Exception("Unable to establish forex connection")
