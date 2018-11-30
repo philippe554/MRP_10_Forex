@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from App.Library.lstm.FOREX import FOREX as FOREX
+from App.Library.lstm.Forex import Forex as ForexClass
 from App.Library.lstm.PSO import PSO as PSO
 
 inputSize = 50
@@ -61,8 +61,7 @@ variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
 pso = PSO(amountOfParticles, np.sum(variableSizes))
-
-forex = FOREX()
+forex = ForexClass()
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -79,7 +78,7 @@ with tf.Session() as sess:
                 variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
             # small x is the placeholder of the tensorflow graph
-            # big X is the sample data of the FOREX.py class
+            # big X is the sample data of the Forex.py class
             Y = sess.run(y, feed_dict={x: X})
 
             f[p] = forex.calcProfit(price, Y)

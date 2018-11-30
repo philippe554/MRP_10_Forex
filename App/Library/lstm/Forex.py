@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class FOREX:
+class Forex:
     def getX(self):
         X = np.random.rand(batchSize, sequenceSize, inputSize)
         price = np.random.rand(batchSize, sequenceSize)
