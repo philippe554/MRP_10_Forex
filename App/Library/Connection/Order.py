@@ -34,7 +34,7 @@ class Order:
         :param stop_percentage: the stop limit will be set to stop_percentage*current_market_price
         :param symbol: currency to buy
         :param connection: specify the connection account to be used. can be either 'benchmark' or 'lstm'
-        :returns trade_id: the fxcm tradeId of the opened position
+        :returns fxcm_position: The new position object returned by FXCM. You can call various methods such as position.get_grossPL() to get the profit or position.get_amount() to get the trade amount
         :raises Exception
         """
         conn = Client.get_connection(connection, True)
@@ -62,7 +62,7 @@ class Order:
 
             # Set the stop loss rate on the active trade
             conn.change_trade_stop_limit(trade_id, is_in_pips=False, is_stop=True, rate=stop_rate)
-            return trade_id
+            return conn.get_open_position(trade_id)
         else:
             # Positions are already opened!
             raise Exception('This account already has an open position')
@@ -73,14 +73,13 @@ class Order:
         SELL: Closes the given position and returns the gross profit/loss that was made
         :param trade_id: tradeId for the position
         :param connection: specify the connection account to be used. can be either 'benchmark' or 'lstm'
-        :returns Float: gross profit/loss after closing the position
+        :returns fxcm_position: The position object returned by FXCM. You can call various methods such as position.get_grossPL() to get the profit or position.get_amount() to get the trade amount
         :raises ValueError when the position can not be found
         """
         conn = Client.get_connection(connection, True)
         position = conn.get_open_position(trade_id)
         position.close()
-        profit = position.get_grossPL()
-        return profit
+        return position
 
     @staticmethod
     def close_all(connection='benchmark'):
