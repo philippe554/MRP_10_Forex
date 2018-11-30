@@ -2,3 +2,5 @@
 fxcmpy==1.1.33
 ta==0.3.7
 pandas
+numpy
+tensorflow
