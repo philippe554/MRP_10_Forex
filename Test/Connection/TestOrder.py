@@ -5,12 +5,13 @@ from App.Library.Connection.Order import Order
 
 class TestOrder(unittest.TestCase):
 
-    def test_get_order_ids(self):
-        # orders = Order.get_orders()
-        self.assertEqual(True, True)
+    def test_buy_sell(self):
+        # Place a buy order
+        trade_id = Order.buy(amount=100)
 
-    def test_all_in(self):
-        order = Order.all_in()
+        # Close the position (sell)
+        profit = Order.close_position(trade_id)
+
         self.assertEqual(True, True)
 
     @classmethod
