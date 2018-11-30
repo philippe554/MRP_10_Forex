@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+from App.Library.lstm.FOREX import FOREX as FOREX
+from App.Library.lstm.PSO import PSO as PSO
 
 inputSize = 50
 l1Size = 40
@@ -51,60 +53,6 @@ def buildNN(x):
 
     return x
 
-# TODO: to some non-lazy guy: put these classes in separate files
-
-class PSO:
-    def __init__(self, amountOfParticles, dims):
-        self.amountOfParticles = amountOfParticles
-        self.dims = dims
-
-        # TODO: properly select random distributions and initial cost
-        self.pos = np.random.rand(self.amountOfParticles, self.dims)
-        self.vel = np.random.rand(self.amountOfParticles, self.dims)
-
-        self.bestPos = self.pos
-        self.bestCost = np.full(self.amountOfParticles, 1000)
-
-        self.bestSwarmPos = self.pos[0] # TODO: should not be the first
-        self.bestSwarmCost = 1000
-
-        # Just some random hyper parameters i found somewhere
-        self.omega = 0.7
-        self.phiP = 2
-        self.phiG = 2
-
-    def getParticles(self):
-        assert list(np.shape(self.pos)) == [self.amountOfParticles, self.dims]
-        return self.pos
-
-    def update(self, cost):
-        assert len(cost) == self.amountOfParticles
-
-        rp = np.random.rand(self.amountOfParticles, self.dims)
-        rg = np.random.rand(self.amountOfParticles, self.dims)
-        self.vel = self.omega * self.vel + self.phiP * rp * (self.bestPos - self.pos) + self.phiG * rg * (self.bestSwarmPos - self.pos)
-        self.pos = self.pos + self.vel
-
-        for i in range(self.amountOfParticles):
-            if cost[i] < self.bestCost[i]:
-                self.bestPos[p,:] = self.pos[p,:]
-                self.bestCost[i] = cost[i]
-
-                if cost[i] < self.bestSwarmCost:
-                    self.bestSwarmPos = self.pos[p,:]
-                    self.bestSwarmCost = cost[i]
-
-class FOREX:
-    def getX(self):
-        X = np.random.rand(batchSize, sequenceSize, inputSize)
-        price = np.random.rand(batchSize, sequenceSize)
-        return X, price
-
-    def calcProfit(self, price, Y):
-        assert list(np.shape(price)) == [batchSize, sequenceSize]
-        assert list(np.shape(Y)) == [batchSize, sequenceSize, outputSize]
-
-        return np.random.rand(1)
 
 y = buildNN(x)
 
@@ -131,7 +79,7 @@ with tf.Session() as sess:
                 variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
             # small x is the placeholder of the tensorflow graph
-            # big X is the sample data of the FOREX class
+            # big X is the sample data of the FOREX.py class
             Y = sess.run(y, feed_dict={x: X})
 
             f[p] = forex.calcProfit(price, Y)
