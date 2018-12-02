@@ -118,3 +118,8 @@ class AccessDB:
             if new_offset > end_window:
                 break
         return df
+
+    def get_db_size(self):
+        conn = sqlite3.connect(inputFile)
+        return int(pd.read_sql_query("SELECT Count(*) FROM price_hist", conn).values[0][0])
+

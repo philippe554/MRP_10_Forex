@@ -3,15 +3,19 @@ import tensorflow as tf
 from App.Library.lstm.Forex import Forex as ForexClass
 from App.Library.lstm.PSO import PSO as PSO
 
-inputSize = 50
+
+
 l1Size = 40
 l2Size = 30
 lstmSize = 20
 outputSize = 2
-sequenceSize = 60
+sequenceSize = 120
 batchSize = 100
 amountOfParticles = 120
-amountOfEpochs = 10
+amountOfEpochs = 100
+
+forex = ForexClass(batchSize, sequenceSize, outputSize)
+inputSize = len(forex.technical_indicators)
 
 x = tf.placeholder("float", [None, sequenceSize, inputSize])
 
@@ -61,30 +65,65 @@ variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
 pso = PSO(amountOfParticles, np.sum(variableSizes))
-forex = ForexClass()
+
+# This is Phillipe's version of LSTM I do not know how to treat the windows
+
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#
+#     for e in range(amountOfEpochs):
+#         w = pso.get_particles()
+#         X, price = forex.get_X()
+#         f = np.zeros(amountOfParticles)
+#
+#         for p in range(amountOfParticles):
+#             # set the parameters for this particle
+#             ws = np.split(w[p,:], np.cumsum(variableSizes))[:-1]
+#             for i in range(len(ws)):
+#                 variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+#
+#             # small x is the placeholder of the tensorflow graph
+#             # big X is the sample data of the Forex.py class
+#             Y = sess.run(y, feed_dict={x: X})
+#
+#             f[p] = forex.calculate_profit(price, Y)
+#
+#         # negate profit, because PSO is cost based
+#         # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
+#         pso.update(-f, p)
+#
+#         print("Epoch", e, "finished with avg profit:", np.mean(f))
+
+# Rodrigo created this modified version of LSTM, but needs to be checked
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
+    number_of_batches = round(forex.db_access.get_db_size() / (sequenceSize * batchSize))
+    print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
-        w = pso.getParticles()
-        X, price = forex.getX()
-        f = np.zeros(amountOfParticles)
+        forex.offset = 0
+        for batches in range(number_of_batches):
+            w = pso.get_particles()
+            X, price = forex.get_X()
+            f = np.zeros(amountOfParticles)
 
-        for p in range(amountOfParticles):
-            # set the parameters for this particle
-            ws = np.split(w[p,:], np.cumsum(variableSizes))[:-1]
-            for i in range(len(ws)):
-                variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+            for p in range(amountOfParticles):
+                # set the parameters for this particle
+                ws = np.split(w[p,:], np.cumsum(variableSizes))[:-1]
+                for i in range(len(ws)):
+                    variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
-            # small x is the placeholder of the tensorflow graph
-            # big X is the sample data of the Forex.py class
-            Y = sess.run(y, feed_dict={x: X})
+                # small x is the placeholder of the tensorflow graph
+                # big X is the sample data of the Forex.py class
+                Y = sess.run(y, feed_dict={x: X})
 
-            f[p] = forex.calcProfit(price, Y)
+                f[p] = forex.calculate_profit(price, Y)
 
-        # negate profit, because PSO is cost based
-        pso.update(-f)
+            # negate profit, because PSO is cost based
+            # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
+            pso.update(-f, p)
+            print("BATCH", batches, "finished with avg profit:", np.mean(f))
 
         print("Epoch", e, "finished with avg profit:", np.mean(f))
 
