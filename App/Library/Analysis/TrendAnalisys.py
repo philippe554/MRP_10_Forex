@@ -1,12 +1,22 @@
 import pandas as pd
 from App.Helpers.AccessTaDB import AccessDB
 import matplotlib.pyplot as plt
+from App.Helpers.LiveTA import LiveTA
 
 
 class TrenAnalisys:
 
-    def __init__(self):
-        self.db = AccessDB()
+    def __init__(self, live=None):
+        """
+        Sets the data source
+        :param live: LiveTA object containing live TA results. set to None to use historic data
+        """
+        if live is None:
+            self.db = AccessDB()
+        elif isinstance(live, LiveTA):
+            self.db = live
+        else:
+            raise ValueError("live must be of type None or LiveTA")
 
     def get_MACD(self, offset, window_size):
         """
@@ -108,7 +118,7 @@ class TrenAnalisys:
         return self.db.get_window_column(["trend_ichimoku_a, trend_ichimoku_b"], offset, window_size)
 
 
-t_an = TrenAnalisys()
-
-print(t_an.get_Ichimoku(100, 100))
+# t_an = TrenAnalisys()
+#
+# print(t_an.get_Ichimoku(100, 100))
 # print(t_an.get_Ichimoku(0,100))

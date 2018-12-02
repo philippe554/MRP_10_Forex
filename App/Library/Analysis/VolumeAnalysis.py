@@ -1,12 +1,22 @@
 import pandas as pd
 from App.Helpers.AccessTaDB import AccessDB
 import matplotlib.pyplot as plt
+from App.Helpers.LiveTA import LiveTA
 
 
 class VolumeAnalysis:
 
-    def __init__(self):
-        self.db = AccessDB()
+    def __init__(self, live=None):
+        """
+        Sets the data source
+        :param live: LiveTA object containing live TA results. set to None to use historic data
+        """
+        if live is None:
+            self.db = AccessDB()
+        elif isinstance(live, LiveTA):
+            self.db = live
+        else:
+            raise ValueError("live must be of type None or LiveTA")
 
     def get_ADI(self, offset, window_size):
         """
@@ -77,5 +87,5 @@ class VolumeAnalysis:
         return self.db.get_window_column(["volume_nvi"], offset, window_size)
 
 
-v_analysis = VolumeAnalysis()
-print(v_analysis.get_ADI(100, 100))
+# v_analysis = VolumeAnalysis()
+# print(v_analysis.get_ADI(100, 100))
