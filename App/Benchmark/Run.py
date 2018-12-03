@@ -21,6 +21,8 @@ o = [0] * 2
 i2 = 0
 b = -50
 
+
+
 # 1260 as a window size works well
 
 
