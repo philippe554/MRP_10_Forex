@@ -1,5 +1,6 @@
 import numpy as np
 from App.Helpers.AccessTaDB import AccessDB
+import random
 
 
 class Forex:
@@ -16,22 +17,29 @@ class Forex:
                             "volatility_dch", \
                             "volatility_dcl", "volatility_dchi", "volatility_dcli"]
 
-    def __init__(self, batch_size, sequence_size, output_size):
+    def __init__(self, batch_size, sequence_size, output_size, random_offset=True):
         self.batch_size = batch_size
         self.sequence_size = sequence_size
         self.output_size = output_size
         self.db_access = AccessDB()
-        self.offset = 0
+        self.db_size = self.db_access.get_db_size()
+        if random_offset:
+            self.offset = int(random.random() * self.db_size)
+        else:
+            self.offset = 0
 
     def get_X(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
         price = np.random.rand(self.batch_size, self.sequence_size)
 
         for batch in range(self.batch_size):
-            X[batch] = self.db_access.get_window_column(self.technical_indicators, self.offset, self.sequence_size)
-            price[batch] = list(
-                self.db_access.get_window_column(["barOPENBid"], self.offset, self.sequence_size).values)
+            info = self.db_access.get_window_column(self.technical_indicators, self.offset, self.sequence_size)
+            X[batch, :len(info)] = info
+            price_info = list(self.db_access.get_window_column(["barOPENBid"], self.offset, self.sequence_size).values)
+            price[batch, :len(price_info)] = price_info
             self.offset += self.sequence_size
+            if self.offset > self.db_size:
+                self.offset = 0
         return X, price
 
     def calculate_profit(self, price, Y):

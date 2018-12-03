@@ -3,13 +3,11 @@ import tensorflow as tf
 from App.Library.lstm.Forex import Forex as ForexClass
 from App.Library.lstm.PSO import PSO as PSO
 
-
-
 l1Size = 40
 l2Size = 30
 lstmSize = 20
 outputSize = 2
-sequenceSize = 120
+sequenceSize = 60
 batchSize = 100
 amountOfParticles = 120
 amountOfEpochs = 100
@@ -28,13 +26,16 @@ variables = {
     'l3b': tf.Variable(tf.random_normal([outputSize]))
 }
 
+
 def check(M, l):
     if M.get_shape().as_list() != l:
         print(M.get_shape().as_list())
         assert False
 
+
 def batchMatMul(M, N):
     return tf.reshape(tf.reshape(M, [-1, M.get_shape()[-1]]) @ N, [-1, M.get_shape()[-2], N.get_shape()[-1]])
+
 
 def buildNN(x):
     # x is input of neural network, size: (Batch size * Amount of timesteps * amount of technical indicators)
@@ -102,7 +103,7 @@ with tf.Session() as sess:
     print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
-        forex.offset = 0
+        forex = ForexClass(batchSize, sequenceSize, outputSize)
         for batches in range(number_of_batches):
             w = pso.get_particles()
             X, price = forex.get_X()
@@ -110,7 +111,7 @@ with tf.Session() as sess:
 
             for p in range(amountOfParticles):
                 # set the parameters for this particle
-                ws = np.split(w[p,:], np.cumsum(variableSizes))[:-1]
+                ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
                 for i in range(len(ws)):
                     variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
@@ -126,4 +127,3 @@ with tf.Session() as sess:
             print("BATCH", batches, "finished with avg profit:", np.mean(f))
 
         print("Epoch", e, "finished with avg profit:", np.mean(f))
-
