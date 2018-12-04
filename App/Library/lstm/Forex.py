@@ -1,37 +1,46 @@
 import numpy as np
 from App.Helpers.AccessTaDB import AccessDB
+import random
 
 
 class Forex:
     technical_indicators = ["trend_macd_diff", "trend_adx",
                             "trend_vortex_diff", "trend_trix", "trend_mass_index",
-                            "trend_cci", \
+                            "trend_cci",
                             "trend_dpo", "trend_kst", "trend_kst_sig", "trend_kst_diff",
-                            "trend_ichimoku_a", "trend_ichimoku_b", \
+                            "trend_ichimoku_a", "trend_ichimoku_b",
                             "momentum_rsi", "momentum_uo", "momentum_tsi", "momentum_wr", "momentum_stoch",
-                            "momentum_ao", "others_dr", \
+                            "momentum_ao", "others_dr",
                             "others_dlr", "others_cr", "volatility_atr", "volatility_bbh", "volatility_bbl",
-                            "volatility_bbhi", \
+                            "volatility_bbhi",
                             "volatility_bbli", "volatility_kch", "volatility_kcl", "volatility_kchi", "volatility_kcli",
-                            "volatility_dch", \
+                            "volatility_dch",
                             "volatility_dcl", "volatility_dchi", "volatility_dcli"]
 
-    def __init__(self, batch_size, sequence_size, output_size):
+    def __init__(self, batch_size, sequence_size, output_size, random_offset=True):
         self.batch_size = batch_size
         self.sequence_size = sequence_size
         self.output_size = output_size
         self.db_access = AccessDB()
-        self.offset = 0
+        self.db_size = self.db_access.get_db_size()
+        if random_offset:
+            self.offset = int(random.random() * self.db_size)
+        else:
+            self.offset = 0
+        print("New Forex object, offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
 
     def get_X(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
         price = np.random.rand(self.batch_size, self.sequence_size)
 
         for batch in range(self.batch_size):
-            X[batch] = self.db_access.get_window_column(self.technical_indicators, self.offset, self.sequence_size)
-            price[batch] = list(
-                self.db_access.get_window_column(["barOPENBid"], self.offset, self.sequence_size).values)
+            info = self.db_access.get_window_column(self.technical_indicators, self.offset, self.sequence_size)
+            X[batch, :len(info)] = info
+            price_info = list(self.db_access.get_window_column(["barOPENBid"], self.offset, self.sequence_size).values)
+            price[batch, :len(price_info)] = price_info
             self.offset += self.sequence_size
+            if self.offset > self.db_size:
+                self.offset = 0
         return X, price
 
     def calculate_profit(self, price, Y):
