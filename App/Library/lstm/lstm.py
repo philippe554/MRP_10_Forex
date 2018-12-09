@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from App.Library.lstm.Forex import Forex as ForexClass
 from App.Library.lstm.PSO import PSO as PSO
+import time
 
 l1Size = 40
 l2Size = 30
@@ -99,11 +100,13 @@ pso = PSO(amountOfParticles, np.sum(variableSizes))
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    number_of_batches = round(forex.db_access.get_db_size() / (sequenceSize * batchSize))
+    number_of_batches = round(forex.db_size / (sequenceSize * batchSize))
     print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
-        forex = ForexClass(batchSize, sequenceSize, outputSize)
+        forex.restart_offset_random()
+        start_time = time.time()
+
         for batches in range(number_of_batches):
             w = pso.get_particles()
             X, price = forex.get_X()
@@ -124,6 +127,9 @@ with tf.Session() as sess:
             # negate profit, because PSO is cost based
             # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
             pso.update(-f, p)
-            print("BATCH", batches, "finished with avg profit:", np.mean(f))
-
-        print("Epoch", e, "finished with avg profit:", np.mean(f))
+            print("BATCH", batches, "finished with avg profit:", round(np.mean(f), 5))
+        t_time = int(time.time() - start_time)
+        minutes = int(t_time / 60)
+        seconds = t_time % 60
+        print("Epoch", e, "finished with avg profit:", round(np.mean(f), 5),
+              "in", minutes, "minutes", seconds, "seconds")

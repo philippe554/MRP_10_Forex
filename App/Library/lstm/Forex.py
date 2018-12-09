@@ -1,9 +1,12 @@
 import numpy as np
 from App.Helpers.AccessTaDB import AccessDB
 import random
+import os
 
 
 class Forex:
+    directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
+
     technical_indicators = ["trend_macd_diff", "trend_adx",
                             "trend_vortex_diff", "trend_trix", "trend_mass_index",
                             "trend_cci",
@@ -17,37 +20,41 @@ class Forex:
                             "volatility_dch",
                             "volatility_dcl", "volatility_dchi", "volatility_dcli"]
 
-    def __init__(self, batch_size, sequence_size, output_size, random_offset=True):
+    def __init__(self, batch_size, sequence_size, output_size):
         self.batch_size = batch_size
         self.sequence_size = sequence_size
         self.output_size = output_size
-        self.db_access = AccessDB()
-        self.db_size = self.db_access.get_db_size()
-        if random_offset:
-            self.offset = int(random.random() * self.db_size)
-        else:
-            self.offset = 0
+
+        db_access = AccessDB()
+        self.db_size = db_access.get_db_size()
+        self.offset = 0
+        self.pd_ta = db_access.get_column(self.technical_indicators)
+        self.pd_price = db_access.get_column(["barOPENBid"])
         print("New Forex object, offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
+
+    def restart_offset_random(self):
+        self.offset = int(random.random() * self.db_size)
 
     def get_X(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
         price = np.random.rand(self.batch_size, self.sequence_size)
 
         for batch in range(self.batch_size):
-            info = self.db_access.get_window_column(self.technical_indicators, self.offset, self.sequence_size)
+            info = self.pd_ta[self.offset: (self.offset + self.sequence_size)]
             X[batch, :len(info)] = info
-            price_info = list(self.db_access.get_window_column(["barOPENBid"], self.offset, self.sequence_size).values)
-            price[batch, :len(price_info)] = price_info
+            price_info = self.pd_price[self.offset: (self.offset + self.sequence_size)]
+            price[batch, :len(price_info)] = list(price_info.values)
             self.offset += self.sequence_size
             if self.offset > self.db_size:
                 self.offset = 0
+
         return X, price
 
     def calculate_profit(self, price, Y):
         """
         Calculate the profit of this period
         :param price: price history
-        :param Y: output of the lstm being for each time-stamp a 2-dimension array. The first position is considered
+        :param Y: output of the LSTM being for each time-stamp a 2-dimension array. The first position is considered
         as a bullish indicator and the bottom as a bear indicator
         :return:
         """
