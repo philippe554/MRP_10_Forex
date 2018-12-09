@@ -1,9 +1,20 @@
 from App.Helpers.AccessTaDB import AccessDB
+from App.Helpers.LiveTA import LiveTA
+
 
 class MomentumAnalyses:
 
-    def __init__(self):
-        self.db = AccessDB()
+    def __init__(self, live=None):
+        """
+        Sets the data source
+        :param live: LiveTA object containing live TA results. set to None to use historic data
+        """
+        if live is None:
+            self.db = AccessDB()
+        elif isinstance(live, LiveTA):
+            self.db = live
+        else:
+            raise ValueError("live must be of type None or LiveTA")
 
     def get_RSI(self, offset, window_size):
         """Relative Strength Index (RSI)
@@ -88,5 +99,5 @@ class MomentumAnalyses:
 
         return self.db.get_window_column(["momentum_ao"], offset, window_size)
 
-mo_an = MomentumAnalyses()
-print(mo_an.get_RSI(100, 100))
+# mo_an = MomentumAnalyses()
+# print(mo_an.get_RSI(100, 100))
