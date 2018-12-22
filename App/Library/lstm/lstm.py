@@ -72,7 +72,7 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-pso = PSO(amountOfParticles, np.sum(variableSizes))
+pso = PSO(amountOfParticles, np.sum(variableSizes), path_to_save)
 
 # This is Phillipe's version of LSTM I do not know how to treat the windows
 
@@ -146,8 +146,9 @@ with tf.Session() as sess:
             pso.update(-f, p)
             print("Iteration", batches, "finished with avg profit:", round(np.mean(f), 5))
             if batches % 100 == 0:
-                print("Model saved")
                 save_path = saver.save(sess, path_to_save + "/model")
+                pso.save_info()
+                print("Model saved")
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
