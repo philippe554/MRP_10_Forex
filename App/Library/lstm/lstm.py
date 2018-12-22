@@ -1,5 +1,6 @@
 import time
 import warnings
+import pickle
 
 import numpy as np
 import tensorflow as tf
@@ -30,7 +31,7 @@ variables = {
     'l3b': tf.Variable(tf.random_normal([outputSize]))
 }
 
-path_to_save = "C:/Users/Rodrigo/Google Drive/Group 10_ Forecast the FOREX market/Model_Weights/Rodrigo"
+path_to_save = "C:/Users/Rodrigo/Google Drive/Group 10_ Forecast the FOREX market/Model_Weights/XXXXXX"
 path_to_save += input("Name of the folder to load/save the weights: ")
 
 
@@ -72,37 +73,14 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-pso = PSO(amountOfParticles, np.sum(variableSizes), path_to_save)
+newPSO = False
 
-# This is Phillipe's version of LSTM I do not know how to treat the windows
+if newPSO:
+    pso = PSO(amountOfParticles, np.sum(variableSizes))
+else:
+    with open(path_to_save + '/model_parameters.pkl', 'rb') as input:
+        pso = pickle.load(input)
 
-# with tf.Session() as sess:
-#     sess.run(tf.global_variables_initializer())
-#
-#     for e in range(amountOfEpochs):
-#         w = pso.get_particles()
-#         X, price = forex.get_X()
-#         f = np.zeros(amountOfParticles)
-#
-#         for p in range(amountOfParticles):
-#             # set the parameters for this particle
-#             ws = np.split(w[p,:], np.cumsum(variableSizes))[:-1]
-#             for i in range(len(ws)):
-#                 variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
-#
-#             # small x is the placeholder of the tensorflow graph
-#             # big X is the sample data of the Forex.py class
-#             Y = sess.run(y, feed_dict={x: X})
-#
-#             f[p] = forex.calculate_profit(price, Y)
-#
-#         # negate profit, because PSO is cost based
-#         # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
-#         pso.update(-f, p)
-#
-#         print("Epoch", e, "finished with avg profit:", np.mean(f))
-
-# Rodrigo created this modified version of LSTM, but needs to be checked
 
 with tf.Session() as sess:
     # Add ops to save and restore all the variables.
@@ -147,7 +125,8 @@ with tf.Session() as sess:
             print("Iteration", batches, "finished with avg profit:", round(np.mean(f), 5))
             if batches % 100 == 0:
                 save_path = saver.save(sess, path_to_save + "/model")
-                pso.save_info()
+                with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
+                    pickle.dump(pso, output)
                 print("Model saved")
 
         t_time = int(time.time() - start_time)

@@ -30,14 +30,12 @@ class Forex:
         db_access = AccessDB()
         self.db_size = db_access.get_db_size()
         self.offset = 0
-        self.pd_ta = db_access.get_end_window_column(self.technical_indicators, 10000)
-        self.pd_price = db_access.get_end_window_column(["barOPENBid"], 10000)
-        self.db_size = len(self.pd_price)
+        self.pd_ta = db_access.get_column(self.technical_indicators)
+        self.pd_price = db_access.get_column(["barOPENBid"])
         self.restart_offset_random()
 
     def restart_offset_random(self):
         self.offset = int(random.random() * self.db_size)
-        self.offset = 0
         print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
 
     def get_X(self):
