@@ -1,7 +1,9 @@
-import numpy as np
-from App.Helpers.AccessTaDB import AccessDB
-import random
 import os
+import random
+
+import numpy as np
+
+from App.Helpers.AccessTaDB import AccessDB
 
 
 class Forex:
@@ -30,10 +32,11 @@ class Forex:
         self.offset = 0
         self.pd_ta = db_access.get_column(self.technical_indicators)
         self.pd_price = db_access.get_column(["barOPENBid"])
-        print("New Forex object, offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
+        self.restart_offset_random()
 
     def restart_offset_random(self):
         self.offset = int(random.random() * self.db_size)
+        print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
 
     def get_X(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
