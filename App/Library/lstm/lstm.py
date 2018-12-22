@@ -1,5 +1,6 @@
 import time
 import warnings
+import pickle
 
 import numpy as np
 import tensorflow as tf
@@ -72,7 +73,13 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-pso = PSO(amountOfParticles, np.sum(variableSizes))
+newPSO = True
+
+if newPSO:
+    pso = PSO(amountOfParticles, np.sum(variableSizes))
+else:
+    with open('model parameters.pkl', 'rb') as input:
+        pso = pickle.load(input)
 
 # This is Phillipe's version of LSTM I do not know how to treat the windows
 
@@ -148,6 +155,9 @@ with tf.Session() as sess:
             if batches % 100 == 0:
                 print("Model saved")
                 save_path = saver.save(sess, path_to_save + "/model")
+
+                with open('model parameters.pkl', 'w') as output:
+                    pickle.dump(pso, output)
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
