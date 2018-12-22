@@ -31,7 +31,7 @@ variables = {
 }
 
 path_to_save = "C:/Users/Rodrigo/Google Drive/Group 10_ Forecast the FOREX market/Model_Weights/Rodrigo"
-path_to_save += input("Name of the folder to load/save the weights: ") + "/model.ckpt"
+path_to_save += input("Name of the folder to load/save the weights: ")
 
 
 def check(M, l):
@@ -105,16 +105,17 @@ pso = PSO(amountOfParticles, np.sum(variableSizes))
 # Rodrigo created this modified version of LSTM, but needs to be checked
 
 with tf.Session() as sess:
-    # Add an op to initialize the variables.
-    init_op = tf.global_variables_initializer()
-
     # Add ops to save and restore all the variables.
     saver = tf.train.Saver()
+
     try:
-        saver.restore(sess, path_to_save)
+        saver = tf.train.import_meta_graph(path_to_save + '/model.meta')
+        saver.restore(sess, tf.train.latest_checkpoint(path_to_save))
+        print("Model restored successfully")
     except:
         warnings.warn("New model created since it was not possible to load")
-        sess.run(init_op)
+        # Add an op to initialize the variables.
+        sess.run(tf.global_variables_initializer())
 
     number_of_batches = round(forex.db_size / (sequenceSize * batchSize))
     print("The number of batches per epoch is", number_of_batches)
@@ -146,7 +147,7 @@ with tf.Session() as sess:
             print("Iteration", batches, "finished with avg profit:", round(np.mean(f), 5))
             if batches % 100 == 0:
                 print("Model saved")
-                save_path = saver.save(sess, path_to_save)
+                save_path = saver.save(sess, path_to_save + "/model")
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
