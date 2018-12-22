@@ -156,7 +156,7 @@ with tf.Session() as sess:
                 print("Model saved")
                 save_path = saver.save(sess, path_to_save + "/model")
 
-                with open('model parameters.pkl', 'w') as output:
+                with open('model parameters.pkl', 'wb') as output:
                     pickle.dump(pso, output)
 
         t_time = int(time.time() - start_time)
