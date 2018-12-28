@@ -1,6 +1,6 @@
+import pickle
 import time
 import warnings
-import pickle
 
 import numpy as np
 import tensorflow as tf
@@ -31,8 +31,10 @@ variables = {
     'l3b': tf.Variable(tf.random_normal([outputSize]))
 }
 
-path_to_save = "C:/Users/Rodrigo/Google Drive/Group 10_ Forecast the FOREX market/Model_Weights/XXXXXX"
-path_to_save += input("Name of the folder to load/save the weights: ")
+path_to_save = "C:/Users/Rodrigo/checkpoints"
+folder = input("Name of the folder to load/save the weights: ")
+if folder:
+    path_to_save += "/" + folder
 
 
 def check(M, l):
@@ -73,14 +75,13 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-newPSO = False
+newPSO = True
 
 if newPSO:
     pso = PSO(amountOfParticles, np.sum(variableSizes))
 else:
     with open(path_to_save + '/model_parameters.pkl', 'rb') as input:
         pso = pickle.load(input)
-
 
 with tf.Session() as sess:
     # Add ops to save and restore all the variables.
@@ -101,6 +102,7 @@ with tf.Session() as sess:
     for e in range(amountOfEpochs):
         forex.restart_offset_random()
         start_time = time.time()
+        avg = []
 
         for batches in range(number_of_batches):
             w = pso.get_particles()
@@ -122,8 +124,10 @@ with tf.Session() as sess:
             # negate profit, because PSO is cost based
             # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
             pso.update(-f, p)
-            print("Iteration", batches, "finished with avg profit:", round(np.mean(f), 5))
-            if batches % 100 == 0:
+            new_avg = round(np.mean(f), 5)
+            avg.append(new_avg)
+            print("Iteration", batches, "finished with avg profit: {:,}.".format(new_avg))
+            if batches % 50 == 0 and batches > 0:
                 save_path = saver.save(sess, path_to_save + "/model")
                 with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
                     pickle.dump(pso, output)
@@ -132,5 +136,5 @@ with tf.Session() as sess:
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
         seconds = t_time % 60
-        print("Epoch", e, "finished with avg profit:", round(np.mean(f), 5),
+        print("Epoch", e, "finished with avg profit: {:,}".format(np.mean(avg)),
               "in", minutes, "minutes", seconds, "seconds")
