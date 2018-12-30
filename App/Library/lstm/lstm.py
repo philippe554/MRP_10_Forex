@@ -75,13 +75,24 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-newPSO = True
+newPSO = input("Do you want to load the previous PSO if exists? (y/n) ").lower() == "n"
 
 if newPSO:
     pso = PSO(amountOfParticles, np.sum(variableSizes))
+    print("New PSO created")
 else:
-    with open(path_to_save + '/model_parameters.pkl', 'rb') as input:
-        pso = pickle.load(input)
+    try:
+        with open(path_to_save + '/model_parameters.pkl', 'rb') as model:
+            pso = pickle.load(model)
+        print("PSO loaded")
+    except Exception as e:
+        create_new = input(
+            "It was not possible to load the PSO, do you want to continue with a new PSO? (y/n) ").lower() == "y"
+        if create_new:
+            pso = PSO(amountOfParticles, np.sum(variableSizes))
+            print("New PSO created")
+        else:
+            raise Exception(e)
 
 with tf.Session() as sess:
     # Add ops to save and restore all the variables.
@@ -108,7 +119,7 @@ with tf.Session() as sess:
             w = pso.get_particles()
             X, price = forex.get_X()
             f = np.zeros(amountOfParticles)
-
+            n_positions = np.zeros(amountOfParticles)
             for p in range(amountOfParticles):
                 # set the parameters for this particle
                 ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
@@ -119,19 +130,22 @@ with tf.Session() as sess:
                 # big X is the sample data of the Forex.py class
                 Y = sess.run(y, feed_dict={x: X})
 
-                f[p] = forex.calculate_profit(price, Y)
+                f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
             # negate profit, because PSO is cost based
             # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
             pso.update(-f, p)
             new_avg = round(np.mean(f), 5)
             avg.append(new_avg)
-            print("Iteration", batches, "finished with avg profit: {:,}.".format(new_avg))
+            print("Iteration", batches,
+                  "finished with avg profit: {:,} and avg of {:,} positions opened".format(new_avg,
+                                                                                           round(np.mean(n_positions),
+                                                                                                 2)))
             if batches % 50 == 0 and batches > 0:
                 save_path = saver.save(sess, path_to_save + "/model")
                 with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
                     pickle.dump(pso, output)
-                print("Model saved")
+                print("Model saved in folder", path_to_save)
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)

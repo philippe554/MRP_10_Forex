@@ -79,6 +79,7 @@ class Forex:
         position_is_long = False
         price_position_open = 0
         money = 10000
+        n_positions = 0
 
         for batch in range(self.batch_size):
             for time_step in range(self.sequence_size):
@@ -98,11 +99,13 @@ class Forex:
                         money *= 0.99
                         money += money * (price[batch, time_step] - price_position_open)
                         position_open = False
+                        n_positions += 1
 
                     if not position_is_long and bull_counter >= 3:
                         money *= 0.99
                         money += money * (price_position_open - price[batch, time_step])
                         position_open = False
+                        n_positions += 1
 
                 else:
                     if bull_counter >= 5:
@@ -123,4 +126,4 @@ class Forex:
                             position_is_long = False
                             price_position_open = price[batch, time_step]
 
-        return money - 10000
+        return money - 10000, n_positions
