@@ -67,7 +67,7 @@ def buildNN(x):
     x = tf.nn.sigmoid(batchMatMul(x, variables['l3']) + variables['l3b'])
     check(x, [None, sequenceSize, outputSize])
 
-    return x
+    return tf.round(x)
 
 
 y = buildNN(x)
@@ -124,7 +124,7 @@ with tf.Session() as sess:
     print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
-        forex.restart_offset_random()
+        #forex.restart_offset_random()
         start_time = time.time()
         avg = []
 
@@ -146,7 +146,6 @@ with tf.Session() as sess:
                 f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
             # negate profit, because PSO is cost based
-            # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
             pso.update(-f)
             new_avg = round(np.mean(f), 5)
             avg.append(new_avg)
