@@ -7,7 +7,7 @@ from App.Helpers.AccessTaDB import AccessDB
 
 
 class Forex:
-    directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
+    #directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
 
     technical_indicators = ["trend_macd_diff", "trend_adx",
                             "trend_vortex_diff", "trend_trix", "trend_mass_index",
@@ -27,12 +27,16 @@ class Forex:
         self.sequence_size = sequence_size
         self.output_size = output_size
 
+        print("Loading database into RAM...")
+
         db_access = AccessDB()
         self.db_size = db_access.get_db_size()
         self.offset = 0
         self.pd_ta = db_access.get_column(self.technical_indicators)
         self.pd_price = db_access.get_column(["barOPENBid"])
         self.restart_offset_random()
+
+        print("Database loaded")
 
     def restart_offset_random(self):
         self.offset = int(random.random() * self.db_size)
