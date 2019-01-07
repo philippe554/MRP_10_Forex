@@ -24,7 +24,7 @@ class PSO:
         assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
-    def update(self, cost):
+    def update(self, cost, p):
         assert len(cost) == self.amount_of_particles
 
         rp = np.random.rand(self.amount_of_particles, self.dims)
@@ -33,14 +33,14 @@ class PSO:
                 self.best_swarm_pos - self.pos)
         self.pos = self.pos + self.vel
 
-        self.update_bests(cost)
+        self.update_bests(cost, p)
 
-    def update_bests(self, cost):
+    def update_bests(self, cost, p):
         for i in range(self.amount_of_particles):
             if cost[i] < self.best_cost[i]:
-                self.best_pos[i, :] = self.pos[i, :]
+                self.best_pos[p, :] = self.pos[p, :]
                 self.best_cost[i] = cost[i]
 
                 if cost[i] < self.best_swarm_cost:
-                    self.best_swarm_pos = self.pos[i, :]
+                    self.best_swarm_pos = self.pos[p, :]
                     self.best_swarm_cost = cost[i]
