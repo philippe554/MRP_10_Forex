@@ -1,66 +1,43 @@
-import os
 import random
-
 import numpy as np
 
-from App.Helpers.AccessTaDB import AccessDB
+from App.Library.lstm.ForexBase import *
 
+class ForexSeq(ForexBase):
+    def get_random_offset(self):
+        return int(random.random() * (self.train_size - self.sequence_size))
 
-class Forex:
-    directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
-
-    technical_indicators = ["trend_macd_diff", "trend_adx",
-                            "trend_vortex_diff", "trend_trix", "trend_mass_index",
-                            "trend_cci",
-                            "trend_dpo", "trend_kst", "trend_kst_sig", "trend_kst_diff",
-                            "trend_ichimoku_a", "trend_ichimoku_b",
-                            "momentum_rsi", "momentum_uo", "momentum_tsi", "momentum_wr", "momentum_stoch",
-                            "momentum_ao", "others_dr",
-                            "others_dlr", "others_cr", "volatility_atr", "volatility_bbh", "volatility_bbl",
-                            "volatility_bbhi",
-                            "volatility_bbli", "volatility_kch", "volatility_kcl", "volatility_kchi", "volatility_kcli",
-                            "volatility_dch",
-                            "volatility_dcl", "volatility_dchi", "volatility_dcli"]
-
-    def __init__(self, batch_size, sequence_size, output_size):
-        self.batch_size = batch_size
-        self.sequence_size = sequence_size
-        self.output_size = output_size
-
-        db_access = AccessDB()
-        self.db_size = db_access.get_db_size()
-        self.offset = 0
-        self.pd_ta = db_access.get_column(self.technical_indicators)
-        self.pd_price = db_access.get_column(["barOPENBid"])
-        self.restart_offset_random()
-
-    def restart_offset_random(self):
-        self.offset = int(random.random() * self.db_size)
-        print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
-
-    def get_X(self):
-        X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
-        price = np.random.rand(self.batch_size, self.sequence_size)
+    def get_X_train(self):
+        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((self.batch_size, self.sequence_size))
 
         for batch in range(self.batch_size):
-            info = self.pd_ta[self.offset: (self.offset + self.sequence_size)]
-            X[batch, :len(info)] = info
-            price_info = self.pd_price[self.offset: (self.offset + self.sequence_size)]
-            price[batch, :len(price_info)] = list(price_info.values)
-            self.offset += self.sequence_size
-            if self.offset > self.db_size:
+            if self.offset > self.train_size - self.sequence_size:
                 self.offset = 0
+
+            info = self.TA_train[self.offset : (self.offset + self.sequence_size)]
+            X[batch , :] = info
+            price[batch , :] = self.price_train[self.offset : (self.offset + self.sequence_size), 0]
+            self.offset += self.sequence_size
+
+
+        return X, price
+
+    def get_X_test(self):
+        assert False
+        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((self.batch_size, self.sequence_size))
 
         return X, price
 
     def calculate_profit(self, price, Y):
         """
-        Calculate the profit of this period
-        :param price: price history
-        :param Y: output of the LSTM being for each time-stamp a 2-dimension array. The first position is considered
-        as a bullish indicator and the bottom as a bear indicator
-        :return:
-        """
+                Calculate the profit of this period
+                :param price: price history
+                :param Y: output of the LSTM being for each time-stamp a 2-dimension array. The first position is considered
+                as a bullish indicator and the bottom as a bear indicator
+                :return:
+                """
         assert list(np.shape(price)) == [self.batch_size, self.sequence_size]
         assert list(np.shape(Y)) == [self.batch_size, self.sequence_size, self.output_size]
         output = Y.round()
@@ -127,3 +104,7 @@ class Forex:
                             price_position_open = price[batch, time_step]
 
         return money - 10000, n_positions
+
+    def restart_offset_random(self):
+        self.offset = int(random.random() * (self.train_size - self.sequence_size))
+        print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.train_size))

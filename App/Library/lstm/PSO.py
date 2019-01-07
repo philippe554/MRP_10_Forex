@@ -44,3 +44,10 @@ class PSO:
                 if cost[i] < self.best_swarm_cost:
                     self.best_swarm_pos = self.pos[p, :]
                     self.best_swarm_cost = cost[i]
+
+    def getStats(self):
+        stats = {}
+        stats["avgBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
+        stats["avgSwarmBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_cost, 2), axis=1)))
+        stats["avgVelocity"] = np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
+        return stats
