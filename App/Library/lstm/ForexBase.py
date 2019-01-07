@@ -38,6 +38,14 @@ class ForexBase:
         self.TA_train = TA[:-testMinutes,:]
         self.TA_test = TA[-testMinutes:, :]
 
+        mean = np.mean(self.TA_train, axis=0, keepdims=True)
+        std = np.std(self.TA_train, axis=0, keepdims=True)
+
+        print(mean, std)
+
+        self.TA_train = (self.TA_train - mean) / std
+        self.TA_test = (self.TA_test - mean) / std
+
         self.price_train = price[:-testMinutes, :]
         self.price_test = price[-testMinutes:, :]
 

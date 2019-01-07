@@ -13,9 +13,9 @@ l1Size = 40
 l2Size = 30
 lstmSize = 20
 outputSize = 2
-sequenceSize = 60
-batchSize = 100
-amountOfParticles = 120
+sequenceSize = 180
+batchSize = 50
+amountOfParticles = 2500
 amountOfEpochs = 100
 
 

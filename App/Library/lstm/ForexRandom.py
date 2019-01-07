@@ -63,4 +63,16 @@ class ForexRandom(ForexBase):
             position_short[close_short_index] = 0
             positions_total += np.sum(close_short_index);
 
+        close_long_index = 0 < position_long
+        money[close_long_index] += (position_long_open[close_long_index] - price[close_long_index, i]) * money[
+            close_long_index] * 0.5 + position_cost[close_long_index]
+        position_long[close_long_index] = 0
+        positions_total += np.sum(close_long_index);
+
+        close_short_index = 0 < position_short
+        money[close_short_index] += (price[close_short_index, i] - position_short_open[close_short_index]) * money[
+            close_short_index] * 0.5 + position_cost[close_short_index]
+        position_short[close_short_index] = 0
+        positions_total += np.sum(close_short_index);
+
         return np.mean(money) - start_capital, positions_total / self.batch_size
