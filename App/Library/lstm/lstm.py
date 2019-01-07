@@ -154,7 +154,6 @@ with tf.Session() as sess:
             print("Iteration", batches,
                   "finished with avg profit: {:,} and avg of {:,} positions opened".format(profitMovingAvg, round(np.mean(n_positions), 2)),
                   pso.getStats())
-
             if batches % 50 == 0 and batches > 0:
                 #save_path = saver.save(sess, path_to_save + "/model")
                 with open(settings.modelPath + '/model_parameters.pkl', 'wb') as output:
