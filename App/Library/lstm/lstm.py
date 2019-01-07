@@ -1,9 +1,10 @@
 import pickle
 import time
-import warnings
 
 import numpy as np
 import tensorflow as tf
+
+from App.Library.Settings import settings
 
 from App.Library.lstm.Forex import Forex as ForexClass
 from App.Library.lstm.PSO import PSO as PSO
@@ -31,10 +32,10 @@ variables = {
     'l3b': tf.Variable(tf.random_normal([outputSize]))
 }
 
-path_to_save = "C:/Users/Rodrigo/checkpoints"
-folder = input("Name of the folder to load/save the weights: ")
-if folder:
-    path_to_save += "/" + folder
+#path_to_save = "C:/Users/Rodrigo/checkpoints"
+#folder = input("Name of the folder to load/save the weights: ")
+#if folder:
+#    path_to_save += "/" + folder
 
 
 def check(M, l):
@@ -66,7 +67,7 @@ def buildNN(x):
     x = tf.nn.sigmoid(batchMatMul(x, variables['l3']) + variables['l3b'])
     check(x, [None, sequenceSize, outputSize])
 
-    return x
+    return tf.round(x)
 
 
 y = buildNN(x)
@@ -75,43 +76,55 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-newPSO = input("Do you want to load the previous PSO if exists? (y/n) ").lower() == "n"
-
-if newPSO:
+if settings.newModel:
     pso = PSO(amountOfParticles, np.sum(variableSizes))
     print("New PSO created")
 else:
     try:
-        with open(path_to_save + '/model_parameters.pkl', 'rb') as model:
+        with open(settings.modelPath + '/model_parameters.pkl', 'rb') as model:
             pso = pickle.load(model)
         print("PSO loaded")
     except Exception as e:
-        create_new = input(
-            "It was not possible to load the PSO, do you want to continue with a new PSO? (y/n) ").lower() == "y"
-        if create_new:
-            pso = PSO(amountOfParticles, np.sum(variableSizes))
-            print("New PSO created")
-        else:
-            raise Exception(e)
+        print("Failed to load PSO")
+        exit()
+
+# newPSO = input("Do you want to load the previous PSO if exists? (y/n) ").lower() == "n"
+#
+# if newPSO:
+#     pso = PSO(amountOfParticles, np.sum(variableSizes))
+#     print("New PSO created")
+# else:
+#     try:
+#         with open(path_to_save + '/model_parameters.pkl', 'rb') as model:
+#             pso = pickle.load(model)
+#         print("PSO loaded")
+#     except Exception as e:
+#         create_new = input(
+#             "It was not possible to load the PSO, do you want to continue with a new PSO? (y/n) ").lower() == "y"
+#         if create_new:
+#             pso = PSO(amountOfParticles, np.sum(variableSizes))
+#             print("New PSO created")
+#         else:
+#             raise Exception(e)
 
 with tf.Session() as sess:
     # Add ops to save and restore all the variables.
-    saver = tf.train.Saver()
+    #saver = tf.train.Saver()
 
-    try:
-        saver = tf.train.import_meta_graph(path_to_save + '/model.meta')
-        saver.restore(sess, tf.train.latest_checkpoint(path_to_save))
-        print("Model restored successfully")
-    except:
-        warnings.warn("New model created since it was not possible to load")
-        # Add an op to initialize the variables.
-        sess.run(tf.global_variables_initializer())
+    #try:
+    #    saver = tf.train.import_meta_graph(path_to_save + '/model.meta')
+    #    saver.restore(sess, tf.train.latest_checkpoint(path_to_save))
+    #    print("Model restored successfully")
+    #except:
+    #    warnings.warn("New model created since it was not possible to load")
+    #    # Add an op to initialize the variables.
+    #    sess.run(tf.global_variables_initializer())
 
     number_of_batches = round(forex.db_size / (sequenceSize * batchSize))
     print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
-        forex.restart_offset_random()
+        #forex.restart_offset_random()
         start_time = time.time()
         avg = []
 
@@ -133,8 +146,7 @@ with tf.Session() as sess:
                 f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
             # negate profit, because PSO is cost based
-            # TODO: CHECK IF THIS IS THE P THAT THE METHOD USES
-            pso.update(-f, p)
+            pso.update(-f)
             new_avg = round(np.mean(f), 5)
             avg.append(new_avg)
             print("Iteration", batches,
@@ -142,10 +154,10 @@ with tf.Session() as sess:
                                                                                            round(np.mean(n_positions),
                                                                                                  2)))
             if batches % 50 == 0 and batches > 0:
-                save_path = saver.save(sess, path_to_save + "/model")
-                with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
+                #save_path = saver.save(sess, path_to_save + "/model")
+                with open(settings.modelPath + '/model_parameters.pkl', 'wb') as output:
                     pickle.dump(pso, output)
-                print("Model saved in folder", path_to_save)
+                print("Model saved in folder", settings.modelPath + '/model_parameters.pkl')
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)

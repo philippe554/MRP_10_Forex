@@ -2,8 +2,12 @@ import pandas as pd
 import sqlite3
 import os
 
+from App.Library.Settings import settings
+
 # inputFile = os.path.expanduser('../../Scripts/TA/price_hist_ta.db')
-inputFile = os.path.expanduser('~/Google Drive/Group 10_ Forecast the FOREX market/Data/price_hist_ta.db')
+# inputFile = os.path.expanduser('~/Google Drive/Group 10_ Forecast the FOREX market/Data/price_hist_ta.db')
+
+inputFile = settings.inputPath
 
 class AccessDB:
 
@@ -19,11 +23,11 @@ class AccessDB:
         :param columns: Array of strings with the name of the columns to extract
         :return: Pandas object with the required columns
         """
+        conn = sqlite3.connect(inputFile)
         done = False
         new_offset = self.offset
         while not done:
-            # print("next batch: " + new_offset.__str__())
-            conn = sqlite3.connect(inputFile)
+            print("next batch: " + new_offset.__str__())
             new_value = pd.read_sql_query("SELECT " + ','.join(columns) + " FROM price_hist LIMIT "
                                           + self.size.__str__() + " OFFSET " + new_offset.__str__(), conn)
 

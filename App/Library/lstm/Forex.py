@@ -7,7 +7,7 @@ from App.Helpers.AccessTaDB import AccessDB
 
 
 class Forex:
-    directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
+    #directory = os.path.expanduser('~/OneDrive/0 AI Master/Research Project/HISTDATA')
 
     technical_indicators = ["trend_macd_diff", "trend_adx",
                             "trend_vortex_diff", "trend_trix", "trend_mass_index",
@@ -27,33 +27,63 @@ class Forex:
         self.sequence_size = sequence_size
         self.output_size = output_size
 
-        db_access = AccessDB()
-        self.db_size = db_access.get_db_size()
-        self.offset = 0
-        self.pd_ta = db_access.get_column(self.technical_indicators)
-        self.pd_price = db_access.get_column(["barOPENBid"])
-        self.restart_offset_random()
+        print("Loading database into RAM...")
 
-    def restart_offset_random(self):
-        self.offset = int(random.random() * self.db_size)
-        print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.db_size))
+        db_access = AccessDB()
+        self.pd_ta = db_access.get_column(self.technical_indicators).values
+        self.pd_price = db_access.get_column(["barOPENBid"]).values
+
+        self.db_size = self.pd_ta.shape[0]
+
+        print("Database loaded")
+
+    def get_random_offset(self):
+        return int(random.random() * (self.db_size - self.sequence_size))
 
     def get_X(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
         price = np.random.rand(self.batch_size, self.sequence_size)
 
         for batch in range(self.batch_size):
-            info = self.pd_ta[self.offset: (self.offset + self.sequence_size)]
-            X[batch, :len(info)] = info
-            price_info = self.pd_price[self.offset: (self.offset + self.sequence_size)]
-            price[batch, :len(price_info)] = list(price_info.values)
-            self.offset += self.sequence_size
-            if self.offset > self.db_size:
-                self.offset = 0
+            offset = self.get_random_offset()
+
+            X[batch, :, :] = self.pd_ta[offset : (offset + self.sequence_size), :]
+            price[batch, :] = self.pd_price[offset : (offset + self.sequence_size), 0]
 
         return X, price
 
     def calculate_profit(self, price, Y):
+        start_capital = 10000
+        position_cost = np.ones(self.batch_size) * 0
+        positions_total = 0;
+        money = np.ones(self.batch_size) * start_capital
+        position_long = np.zeros(self.batch_size)
+        position_short = np.zeros(self.batch_size)
+        position_long_open = np.zeros(self.batch_size)
+        position_short_open = np.zeros(self.batch_size)
+
+        for i in range(self.sequence_size):
+            open_long_index = Y[:, i, 0] > position_long
+            position_long_open[open_long_index] = price[open_long_index, i]
+            position_long[open_long_index] = 1
+
+            close_long_index = Y[:, i, 0] < position_long
+            money[close_long_index] += (position_long_open[close_long_index] - price[close_long_index, i]) * money[close_long_index] * 0.5 + position_cost[close_long_index]
+            position_long[close_long_index] = 0
+            positions_total += np.sum(close_long_index);
+
+            open_short_index = Y[:, i, 1] > position_short
+            position_short_open[open_short_index] = price[open_short_index, i]
+            position_short[open_short_index] = 1
+
+            close_short_index = Y[:, i, 1] < position_short
+            money[close_short_index] += (price[close_short_index, i] - position_short_open[close_short_index]) * money[close_short_index] * 0.5 + position_cost[close_short_index]
+            position_short[close_short_index] = 0
+            positions_total += np.sum(close_short_index);
+
+        return np.mean(money) - start_capital, positions_total/self.batch_size
+
+    def calculate_profit_alternative(self, price, Y):
         """
         Calculate the profit of this period
         :param price: price history
