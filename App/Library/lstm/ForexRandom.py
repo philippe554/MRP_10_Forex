@@ -8,8 +8,8 @@ class ForexRandom(ForexBase):
         return int(random.random() * (self.train_size - self.sequence_size))
 
     def get_X_train(self):
-        X = np.zeros(self.batch_size, self.sequence_size, len(self.technical_indicators))
-        price = np.zeros(self.batch_size, self.sequence_size)
+        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((self.batch_size, self.sequence_size))
 
         for batch in range(self.batch_size):
             offset = self.get_random_offset()
@@ -21,8 +21,8 @@ class ForexRandom(ForexBase):
 
     def get_X_test(self):
         assert False
-        X = np.zeros(self.batch_size, self.sequence_size, len(self.technical_indicators))
-        price = np.zeros(self.batch_size, self.sequence_size)
+        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((self.batch_size, self.sequence_size))
 
         for batch in range(self.batch_size):
             offset = self.get_random_offset()

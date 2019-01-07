@@ -131,7 +131,7 @@ else:
                 raise Exception(e)
 
 with tf.Session() as sess:
-    number_of_batches = round(forex.db_size / (sequenceSize * batchSize))
+    number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
     print("The number of batches per epoch is", number_of_batches)
 
     for e in range(amountOfEpochs):
@@ -142,7 +142,7 @@ with tf.Session() as sess:
 
         for batches in range(number_of_batches):
             w = pso.get_particles()
-            X, price = forex.get_X()
+            X, price = forex.get_X_train()
             f = np.zeros(amountOfParticles)
             n_positions = np.zeros(amountOfParticles)
             for p in range(amountOfParticles):
@@ -152,7 +152,7 @@ with tf.Session() as sess:
                     variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
 
                 # small x is the placeholder of the tensorflow graph
-                # big X is the sample data of the Forex.py class
+                # big X is the sample data of the ForexBase.py class
                 Y = sess.run(y, feed_dict={x: X})
 
                 f[p], n_positions[p] = forex.calculate_profit(price, Y)

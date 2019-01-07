@@ -24,14 +24,16 @@ class ForexBase:
         self.sequence_size = sequence_size
         self.output_size = output_size
 
-        print("Loading database into RAM...")
 
         db_access = AccessDB()
 
+        print("Loading TA database into RAM...")
         TA = db_access.get_column(self.technical_indicators).values
+
+        print("Loading price database into RAM...")
         price = db_access.get_column(["barOPENBid"]).values
 
-        testMinutes = 60*24*200
+        testMinutes =  60*24*200
 
         self.TA_train = TA[:-testMinutes,:]
         self.TA_test = TA[-testMinutes:, :]
