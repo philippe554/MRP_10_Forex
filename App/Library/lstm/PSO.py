@@ -24,7 +24,7 @@ class PSO:
         assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
-    def update(self, cost, p):
+    def update(self, cost):
         assert len(cost) == self.amount_of_particles
 
         rp = np.random.rand(self.amount_of_particles, self.dims)
@@ -33,20 +33,22 @@ class PSO:
                 self.best_swarm_pos - self.pos)
         self.pos = self.pos + self.vel
 
-        self.update_bests(cost, p)
+        self.update_bests(cost)
 
-    def update_bests(self, cost, p):
+    def update_bests(self, cost):
         for i in range(self.amount_of_particles):
             if cost[i] < self.best_cost[i]:
-                self.best_pos[p, :] = self.pos[p, :]
+                self.best_pos[i, :] = self.pos[i, :]
                 self.best_cost[i] = cost[i]
 
                 if cost[i] < self.best_swarm_cost:
-                    self.best_swarm_pos = self.pos[p, :]
+                    self.best_swarm_pos = self.pos[i, :]
                     self.best_swarm_cost = cost[i]
 
     def getStats(self):
         stats = {}
+        stats["avgPos"] = np.mean(self.pos)
+        stats["stdPos"] = 0
         stats["avgBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
         stats["avgSwarmBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_cost, 2), axis=1)))
         stats["avgVelocity"] = np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
