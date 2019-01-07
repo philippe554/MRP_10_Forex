@@ -127,6 +127,7 @@ with tf.Session() as sess:
         #forex.restart_offset_random()
         start_time = time.time()
         avg = []
+        profitMovingAvg = 0;
 
         for batches in range(number_of_batches):
             w = pso.get_particles()
@@ -149,10 +150,10 @@ with tf.Session() as sess:
             pso.update(-f)
             new_avg = round(np.mean(f), 5)
             avg.append(new_avg)
+            profitMovingAvg = profitMovingAvg * 0.99 + new_avg * 0.01
             print("Iteration", batches,
-                  "finished with avg profit: {:,} and avg of {:,} positions opened".format(new_avg,
-                                                                                           round(np.mean(n_positions),
-                                                                                                 2)))
+                  "finished with avg profit: {:,} and avg of {:,} positions opened".format(profitMovingAvg, round(np.mean(n_positions), 2)),
+                  pso.getStats())
             if batches % 50 == 0 and batches > 0:
                 #save_path = saver.save(sess, path_to_save + "/model")
                 with open(settings.modelPath + '/model_parameters.pkl', 'wb') as output:
