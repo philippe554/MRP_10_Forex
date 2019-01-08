@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 from App.Library.Settings import settings
+from App.Library.lstm.ForexOverlap import ForexOverlap
 from App.Library.lstm.ForexRandom import ForexRandom
 from App.Library.lstm.ForexSeq import ForexSeq
 from App.Library.lstm.PSO import PSO
@@ -13,27 +14,32 @@ l1Size = 40
 l2Size = 30
 lstmSize = 20
 outputSize = 2
-sequenceSize = 180
-batchSize = 50
+sequenceSize = 60
+sequenceOverlap = 30
+batchSize = 10
 amountOfParticles = 100
 amountOfEpochs = 100
 
 
 def forex_type():
-    type = input("Type of Forex class to use, random or sequential? (1/2)")
+    type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
     if type == 1:
-        forex = ForexRandom(batchSize, sequenceSize, outputSize)
+        forex = ForexRandom(batchSize, sequenceSize, sequenceOverlap, outputSize)
+    elif type == 2:
+        forex = ForexSeq(batchSize, sequenceSize, sequenceOverlap, outputSize)
     else:
-        forex = ForexSeq(batchSize, sequenceSize, outputSize)
+        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
 
     return forex
 
 
 if settings.useParameters:
     if settings.forexType == "random":
-        forex = ForexRandom(batchSize, sequenceSize, outputSize)
+        forex = ForexRandom(batchSize, sequenceSize, sequenceOverlap, outputSize)
+    elif settings.forexType == "overlap":
+        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
     elif settings.forexType == "seq":
-        forex = ForexSeq(batchSize, sequenceSize, outputSize)
+        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
     else:
         forex = forex_type()
 else:
@@ -142,7 +148,18 @@ def run_model(sess, X, price):
 
     for p in range(amountOfParticles):
         loadParticle(sess, w, p)
-        Y = sess.run(y, feed_dict={x: X})
+
+        if settings.forexType == "overlap":
+            # Run the lstm multiple times with overlapping windows
+            Y = np.zeros((batchSize, sequenceOverlap, outputSize))
+            for overlap_offset in range(sequenceOverlap):
+                window = X[:, overlap_offset:sequenceSize+overlap_offset]
+                interval = sess.run(y, feed_dict={x: window})
+
+                # Output:
+                Y[:,overlap_offset] = interval[:,len(interval[:])-1]
+        else:
+            Y = sess.run(y, feed_dict={x: X})
 
         f[p], n_positions[p] = forex.calculate_profit(price, Y)
 

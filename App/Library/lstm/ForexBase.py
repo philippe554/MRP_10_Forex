@@ -21,9 +21,10 @@ class ForexBase:
                             "volatility_dch",
                             "volatility_dcl", "volatility_dchi", "volatility_dcli"]
 
-    def __init__(self, batch_size, sequence_size, output_size):
+    def __init__(self, batch_size, sequence_size, sequence_overlap, output_size):
         self.batch_size = batch_size
         self.sequence_size = sequence_size
+        self.sequence_overlap = sequence_overlap
         self.output_size = output_size
 
         try:
