@@ -21,11 +21,11 @@ class PSO:
         self.phiG = 2 / 2.0
 
     def get_particles(self):
-        #assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
+        # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
     def update(self, cost):
-        #assert len(cost) == self.amount_of_particles
+        # assert len(cost) == self.amount_of_particles
 
         rp = np.random.rand(self.amount_of_particles, self.dims)
         rg = np.random.rand(self.amount_of_particles, self.dims)
@@ -50,6 +50,6 @@ class PSO:
         stats["avgPos"] = np.mean(self.pos)
         stats["varPos"] = np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
         stats["avgBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
-        stats["avgSwarmBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_cost, 2), axis=1)))
+        stats["avgSwarmBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
         stats["avgVelocity"] = np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
         return stats
