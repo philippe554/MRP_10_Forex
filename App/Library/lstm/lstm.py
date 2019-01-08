@@ -163,7 +163,8 @@ with tf.Session() as sess:
             avg.append(new_avg)
             profitMovingAvg = profitMovingAvg * 0.99 + new_avg * 0.01
             print("Iteration", batches,
-                  "finished with avg profit: {:,} and avg of {:,} positions opened".format(profitMovingAvg,
+                  "finished with avg profit: {:,} (MA={:,}) and avg of {:,} positions opened".format(new_avg,
+                                                                                           profitMovingAvg,
                                                                                            round(np.mean(n_positions),
                                                                                                  2)),
                   pso.getStats())
