@@ -73,14 +73,14 @@ class ForexSeq(ForexBase):
 
                 if position_open:
                     if position_is_long and bear_counter >= 3:
-                        money *= 0.99
                         money += money * (price[batch, time_step] - price_position_open)
+                        money *= 0.999
                         position_open = False
                         n_positions += 1
 
                     if not position_is_long and bull_counter >= 3:
-                        money *= 0.99
                         money += money * (price_position_open - price[batch, time_step])
+                        money *= 0.999
                         position_open = False
                         n_positions += 1
 

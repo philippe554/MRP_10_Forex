@@ -1,7 +1,5 @@
-import random
-import numpy as np
-
 from App.Library.lstm.ForexBase import *
+
 
 class ForexRandom(ForexBase):
     def get_random_offset(self):
@@ -14,8 +12,8 @@ class ForexRandom(ForexBase):
         for batch in range(self.batch_size):
             offset = self.get_random_offset()
 
-            X[batch, :, :] = self.TA_train[offset : (offset + self.sequence_size), :]
-            price[batch, :] = self.price_train[offset : (offset + self.sequence_size), 0]
+            X[batch, :, :] = self.TA_train[offset: (offset + self.sequence_size), :]
+            price[batch, :] = self.price_train[offset: (offset + self.sequence_size), 0]
 
         return X, price
 
