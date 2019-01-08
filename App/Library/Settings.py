@@ -11,6 +11,8 @@ parser.add_argument('-n', action='store_true', default=False, dest='newModel', h
 
 parser.add_argument('-f', action='store', dest='forexType', help='Kind of forex class')
 
+parser.add_argument('-c', action='store', dest='cachePath', help='folder to cache the database')
+
 settings = parser.parse_args()
 
 print("Parameters loaded:", settings)
