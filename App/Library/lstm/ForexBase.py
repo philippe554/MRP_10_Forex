@@ -27,7 +27,7 @@ class ForexBase:
         self.output_size = output_size
 
         try:
-            with open(settings.modelPath + '/cache.p', 'rb') as cacheFile:
+            with open(settings.cachePath + '/cache.p', 'rb') as cacheFile:
                 cache = pickle.load(cacheFile)
 
                 self.TA_train = cache["TA_train"]
@@ -74,7 +74,7 @@ class ForexBase:
             cache["price_train"] = self.price_train
             cache["price_test"] = self.price_test
 
-            with open(settings.modelPath + '/cache.p', 'wb') as cacheFile:
+            with open(settings.cachePath + '/cache.p', 'wb') as cacheFile:
                 pickle.dump(cache, cacheFile)
 
         print("Database loaded")
