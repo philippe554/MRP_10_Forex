@@ -21,11 +21,11 @@ class PSO:
         self.phiG = 2 / 2.0
 
     def get_particles(self):
-        #assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
+        # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
     def update(self, cost):
-        #assert len(cost) == self.amount_of_particles
+        # assert len(cost) == self.amount_of_particles
 
         rp = np.random.rand(self.amount_of_particles, self.dims)
         rg = np.random.rand(self.amount_of_particles, self.dims)
