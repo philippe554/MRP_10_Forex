@@ -1,8 +1,10 @@
 import os
 import random
+import pickle
 
 import numpy as np
 
+from App.Library.Settings import settings
 from App.Helpers.AccessTaDB import AccessDB
 
 class ForexBase:
@@ -24,33 +26,56 @@ class ForexBase:
         self.sequence_size = sequence_size
         self.output_size = output_size
 
+        try:
+            with open(settings.modelPath + '/cache.p', 'rb') as cacheFile:
+                cache = pickle.load(cacheFile)
 
-        db_access = AccessDB()
+                self.TA_train = cache["TA_train"]
+                self.TA_test = cache["TA_test"]
 
-        print("Loading TA database into RAM...")
-        TA = db_access.get_column(self.technical_indicators).values
+                self.price_train = cache["price_train"]
+                self.price_test = cache["price_test"]
 
-        print("Loading price database into RAM...")
-        price = db_access.get_column(["barOPENBid"]).values
+                self.train_size = self.TA_train.shape[0]
+                self.test_size = self.TA_test.shape[0]
 
-        testMinutes =  60*24*200
+        except:
+            db_access = AccessDB()
 
-        self.TA_train = TA[:-testMinutes,:]
-        self.TA_test = TA[-testMinutes:, :]
+            print("Loading TA database into RAM...")
+            TA = db_access.get_column(self.technical_indicators).values
 
-        mean = np.mean(self.TA_train, axis=0, keepdims=True)
-        std = np.std(self.TA_train, axis=0, keepdims=True)
+            print("Loading price database into RAM...")
+            price = db_access.get_column(["barOPENBid"]).values
 
-        print(mean, std)
+            testMinutes =  60*24*200
 
-        self.TA_train = (self.TA_train - mean) / std
-        self.TA_test = (self.TA_test - mean) / std
+            self.TA_train = TA[:-testMinutes,:]
+            self.TA_test = TA[-testMinutes:, :]
 
-        self.price_train = price[:-testMinutes, :]
-        self.price_test = price[-testMinutes:, :]
+            mean = np.mean(self.TA_train, axis=0, keepdims=True)
+            std = np.std(self.TA_train, axis=0, keepdims=True)
 
-        self.train_size = self.TA_train.shape[0]
-        self.test_size = self.TA_test.shape[0]
+            print(mean, std)
+
+            self.TA_train = (self.TA_train - mean) / std
+            self.TA_test = (self.TA_test - mean) / std
+
+            self.price_train = price[:-testMinutes, :]
+            self.price_test = price[-testMinutes:, :]
+
+            self.train_size = self.TA_train.shape[0]
+            self.test_size = self.TA_test.shape[0]
+
+            cache = {}
+            cache["TA_train"] = self.TA_train
+            cache["TA_test"] = self.TA_test
+
+            cache["price_train"] = self.price_train
+            cache["price_test"] = self.price_test
+
+            with open(settings.modelPath + '/cache.p', 'wb') as cacheFile:
+                pickle.dump(cache, cacheFile)
 
         print("Database loaded")
 
