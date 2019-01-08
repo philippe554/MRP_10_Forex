@@ -15,7 +15,7 @@ lstmSize = 20
 outputSize = 2
 sequenceSize = 180
 batchSize = 50
-amountOfParticles = 2500
+amountOfParticles = 100
 amountOfEpochs = 100
 
 
@@ -130,6 +130,48 @@ else:
             else:
                 raise Exception(e)
 
+def loadParticle(sess, w, p):
+    ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
+    for i in range(len(ws)):
+        variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+def run_model(sess, X, price):
+    w = pso.get_particles()
+    f = np.zeros(amountOfParticles)
+    n_positions = np.zeros(amountOfParticles)
+
+    for p in range(amountOfParticles):
+        loadParticle(sess, w, p)
+        Y = sess.run(y, feed_dict={x: X})
+
+        f[p], n_positions[p] = forex.calculate_profit(price, Y)
+
+    return f, n_positions
+
+def debug_output(meta, f, n_positions):
+    print(meta,"avg profit:", np.mean(f), "avg pos:", np.mean(n_positions), pso.getStats())
+
+def train_step(sess, e, b):
+    X, price = forex.get_X_train()
+
+    f, n_positions = run_model(sess, X, price)
+
+    pso.update(-f)
+
+    debug_output("Train " + str(e) + "-" + str(b) + ":", f, n_positions)
+
+def test_step(sess):
+    X, price = forex.get_X_test()
+
+    f, n_positions = run_model(sess, X, price)
+
+    debug_output("Test:", f, n_positions)
+
+def save_model():
+    with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
+        pickle.dump(pso, output)
+    print("Model saved in folder", path_to_save + '/model_parameters.pkl')
+
 with tf.Session() as sess:
     number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
     print("The number of batches per epoch is", number_of_batches)
@@ -137,58 +179,15 @@ with tf.Session() as sess:
     for e in range(amountOfEpochs):
         forex.restart_offset_random()
         start_time = time.time()
-        avg = []
-        profitMovingAvg = 0;
 
-        for batches in range(number_of_batches):
-            w = pso.get_particles()
-            X, price = forex.get_X_train()
-            f = np.zeros(amountOfParticles)
-            n_positions = np.zeros(amountOfParticles)
-            for p in range(amountOfParticles):
-                # set the parameters for this particle
-                ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
-                for i in range(len(ws)):
-                    variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+        for b in range(number_of_batches):
+            train_step(sess, e, b)
 
-                # small x is the placeholder of the tensorflow graph
-                # big X is the sample data of the ForexBase.py class
-                Y = sess.run(y, feed_dict={x: X})
-
-                f[p], n_positions[p] = forex.calculate_profit(price, Y)
-
-            # negate profit, because PSO is cost based
-            pso.update(-f)
-            new_avg = round(np.mean(f), 5)
-            avg.append(new_avg)
-            profitMovingAvg = profitMovingAvg * 0.99 + new_avg * 0.01
-            print("Iteration", batches,
-                  "finished with avg profit: {:,} (MA={:,}) and avg of {:,} positions opened".format(new_avg,
-                                                                                           profitMovingAvg,
-                                                                                           round(np.mean(n_positions),
-                                                                                                 2)),
-                  pso.getStats())
-            if batches % 50 == 0 and batches > 0:
-                with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
-                    pickle.dump(pso, output)
-                print("Model saved in folder", path_to_save + '/model_parameters.pkl')
+            if b % 50 == 0 and b > 0:
+                test_step(sess)
+                save_model()
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
         seconds = t_time % 60
-        print("Epoch", e, "finished with avg profit: {:,}".format(np.mean(avg)),
-              "in", minutes, "minutes", seconds, "seconds")
-
-
-
-# Add ops to save and restore all the variables.
-# saver = tf.train.Saver()
-
-# try:
-#    saver = tf.train.import_meta_graph(path_to_save + '/model.meta')
-#    saver.restore(sess, tf.train.latest_checkpoint(path_to_save))
-#    print("Model restored successfully")
-# except:
-#    warnings.warn("New model created since it was not possible to load")
-#    # Add an op to initialize the variables.
-#    sess.run(tf.global_variables_initializer())
+        print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
