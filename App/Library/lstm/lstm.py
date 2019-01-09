@@ -130,10 +130,25 @@ else:
             else:
                 raise Exception(e)
 
-def loadParticle(sess, w, p):
+
+def load_particle(sess, w, p):
     ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
     for i in range(len(ws)):
         variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+
+def run_model_test(sess, X, price):
+    w = pso.get_best_particle()
+    ws = np.split(w, np.cumsum(variableSizes))[:-1]
+
+    for i in range(len(ws)):
+        variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+    Y = sess.run(y, feed_dict={x: X})
+    f = forex.calculate_profit_test(price, Y)
+
+    return f
+
 
 def run_model(sess, X, price):
     w = pso.get_particles()
@@ -141,15 +156,19 @@ def run_model(sess, X, price):
     n_positions = np.zeros(amountOfParticles)
 
     for p in range(amountOfParticles):
-        loadParticle(sess, w, p)
+        load_particle(sess, w, p)
         Y = sess.run(y, feed_dict={x: X})
-
-        f[p], n_positions[p] = forex.calculate_profit(price, Y)
+        if test:
+            f = forex.calculate_profit_test(price, Y)
+        else:
+            f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
     return f, n_positions
 
+
 def debug_output(meta, f, n_positions):
-    print(meta,"avg profit:", np.mean(f), "avg pos:", np.mean(n_positions), pso.getStats())
+    print(meta, "avg profit:", np.mean(f), "avg pos:", np.mean(n_positions), pso.getStats())
+
 
 def train_step(sess, e, b):
     X, price = forex.get_X_train()
@@ -160,34 +179,61 @@ def train_step(sess, e, b):
 
     debug_output("Train " + str(e) + "-" + str(b) + ":", f, n_positions)
 
-def test_step(sess):
+
+def test_step(sess, out_test):
     X, price = forex.get_X_test()
 
-    f, n_positions = run_model(sess, X, price)
+    f = run_model_test(sess, X, price)
 
-    debug_output("Test:", f, n_positions)
+    return f
+
 
 def save_model():
     with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
         pickle.dump(pso, output)
     print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
-with tf.Session() as sess:
-    number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
-    print("The number of batches per epoch is", number_of_batches)
 
-    for e in range(amountOfEpochs):
-        forex.restart_offset_random()
+def train():
+    with tf.Session() as sess:
+        number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
+        print("The number of batches per epoch is", number_of_batches)
+
+        for e in range(amountOfEpochs):
+            forex.restart_offset_random()
+            start_time = time.time()
+
+            for b in range(number_of_batches):
+                train_step(sess, e, b)
+
+                if b % 50 == 0 and b > 0:
+                    test_step(sess, False)
+                    save_model()
+
+            t_time = int(time.time() - start_time)
+            minutes = int(t_time / 60)
+            seconds = t_time % 60
+            print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
+
+
+def test():
+    with tf.Session() as sess:
+        number_of_batches = round(forex.test_size - sequenceSize)
+        print("The number of batches is", number_of_batches)
         start_time = time.time()
-
-        for b in range(number_of_batches):
-            train_step(sess, e, b)
-
-            if b % 50 == 0 and b > 0:
-                test_step(sess)
-                save_model()
+        for e in range(number_of_batches):
+            test_step(sess, True)
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
         seconds = t_time % 60
-        print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
+        print("Testing finished in", minutes, "minutes", seconds, "seconds")
+        print("Money after testing:", forex.money, "number of positions:", forex.n_positions)
+
+
+if settings.useParameters and settings.test:
+    print("Testing the model...")
+    test()
+else:
+    print("Training the model...")
+    train()

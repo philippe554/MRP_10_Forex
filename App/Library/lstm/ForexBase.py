@@ -1,11 +1,10 @@
-import os
-import random
 import pickle
 
 import numpy as np
 
-from App.Library.Settings import settings
 from App.Helpers.AccessTaDB import AccessDB
+from App.Library.Settings import settings
+
 
 class ForexBase:
     technical_indicators = ["trend_macd_diff", "trend_adx",
@@ -25,6 +24,7 @@ class ForexBase:
         self.batch_size = batch_size
         self.sequence_size = sequence_size
         self.output_size = output_size
+        self.test_offset = 0
 
         try:
             with open(settings.cachePath + '/cache.p', 'rb') as cacheFile:
@@ -48,9 +48,9 @@ class ForexBase:
             print("Loading price database into RAM...")
             price = db_access.get_column(["barOPENBid"]).values
 
-            testMinutes =  60*24*200
+            testMinutes = 60 * 24 * 200
 
-            self.TA_train = TA[:-testMinutes,:]
+            self.TA_train = TA[:-testMinutes, :]
             self.TA_test = TA[-testMinutes:, :]
 
             mean = np.mean(self.TA_train, axis=0, keepdims=True)
@@ -95,6 +95,9 @@ class ForexBase:
         return X, price
 
     def calculate_profit(self, price, Y):
+        return 0
+
+    def calculate_profit_test(self, price, Y):
         return 0
 
     def restart_offset_random(self):

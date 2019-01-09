@@ -1,9 +1,10 @@
 import random
-import numpy as np
 
 from App.Library.lstm.ForexBase import *
 
+
 class ForexRandom(ForexBase):
+
     def get_X_train(self):
         X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
         price = np.zeros((self.batch_size, self.sequence_size))
@@ -11,8 +12,8 @@ class ForexRandom(ForexBase):
         for batch in range(self.batch_size):
             offset = int(random.random() * (self.train_size - self.sequence_size))
 
-            X[batch, :, :] = self.TA_train[offset : (offset + self.sequence_size), :]
-            price[batch, :] = self.price_train[offset : (offset + self.sequence_size), 0]
+            X[batch, :, :] = self.TA_train[offset: (offset + self.sequence_size), :]
+            price[batch, :] = self.price_train[offset: (offset + self.sequence_size), 0]
 
         return X, price
 
@@ -91,21 +92,20 @@ class ForexRandom(ForexBase):
                     position_long = 0
                     positions_total += 1
 
-
                 if Y[j, i, 1] > position_short:
                     position_short_open = price[j, i]
-                    position_short  = 1
+                    position_short = 1
                 if Y[j, i, 1] < position_short:
                     pipsGained[j] += price[j, i] - position_short_open - position_cost
                     position_short = 0
                     positions_total += 1
 
-            if Y[j, i, 0] < position_long:
-                pipsGained[j] += position_long_open - price[j, i] - position_cost
+            if Y[j, -1, 0] < position_long:
+                pipsGained[j] += position_long_open - price[j, -1] - position_cost
                 positions_total += 1
 
-            if Y[j, i, 1] < position_short:
-                pipsGained[j] += price[j, i] - position_short_open - position_cost
+            if Y[j, -1, 1] < position_short:
+                pipsGained[j] += price[j, -1] - position_short_open - position_cost
                 positions_total += 1
 
         return np.mean(pipsGained), positions_total / self.batch_size

@@ -13,6 +13,8 @@ parser.add_argument('-f', action='store', dest='forexType', help='Kind of forex 
 
 parser.add_argument('-c', action='store', dest='cachePath', help='folder to cache the database')
 
+parser.add_argument('-t', action='store_true', dest='test', help='test the network')
+
 settings = parser.parse_args()
 
 print("Parameters loaded:", settings)
