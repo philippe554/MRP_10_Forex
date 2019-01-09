@@ -47,8 +47,6 @@ else:
 
 inputSize = len(forex.technical_indicators)
 
-x = tf.placeholder("float", [None, sequenceSize, inputSize])
-
 variables = {
     'l1': tf.Variable(tf.random_normal([inputSize, l1Size])),
     'l1b': tf.Variable(tf.random_normal([l1Size])),
@@ -90,8 +88,34 @@ def buildNN(x):
 
     return tf.round(x)
 
+def buildNNOverlap(x):
+    check(x, [None, sequenceSize + sequenceOverlap, inputSize])
 
-y = buildNN(x)
+    x = tf.stack([x[:,i:i+sequenceSize,:] for i in range(sequenceOverlap)], axis=1)
+    check(x, [None, sequenceOverlap, sequenceSize, inputSize])
+
+    # Merge the batch dimension with the overlap dimension, for tensorflow they are both batches
+    x = tf.reshape(x, shape=[-1, sequenceSize, inputSize])
+    check(x, [None, sequenceSize, inputSize])
+
+    x = buildNN(x)
+    check(x, [None, sequenceSize, outputSize])
+
+    # Unfold the merge
+    x = tf.reshape(x, shape=[-1, sequenceOverlap, sequenceSize, outputSize])
+    check(x, [None, sequenceOverlap, sequenceSize, outputSize])
+
+    x = x[:,:,-1,:]
+    check(x, [None, sequenceOverlap, outputSize])
+
+    return x
+
+if settings.forexType == "overlap":
+    x = tf.placeholder("float", [None, sequenceSize + sequenceOverlap, inputSize])
+    y = buildNNOverlap(x)
+else:
+    x = tf.placeholder("float", [None, sequenceSize, inputSize])
+    y = buildNN(x)
 
 variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
@@ -151,13 +175,16 @@ def run_model(sess, X, price):
 
         if settings.forexType == "overlap":
             # Run the lstm multiple times with overlapping windows
-            Y = np.zeros((batchSize, sequenceOverlap, outputSize))
-            for overlap_offset in range(sequenceOverlap):
-                window = X[:, overlap_offset:sequenceSize+overlap_offset]
-                interval = sess.run(y, feed_dict={x: window})
+            # Y = np.zeros((batchSize, sequenceOverlap, outputSize))
+            # for overlap_offset in range(sequenceOverlap):
+            #     window = X[:, overlap_offset:sequenceSize+overlap_offset]
+            #     interval = sess.run(y, feed_dict={x: window})
+            #
+            #     # Output:
+            #     Y[:,overlap_offset] = interval[:,len(interval[:])-1]
 
-                # Output:
-                Y[:,overlap_offset] = interval[:,len(interval[:])-1]
+            Y = sess.run(y, feed_dict={x: X})
+
         else:
             Y = sess.run(y, feed_dict={x: X})
 
