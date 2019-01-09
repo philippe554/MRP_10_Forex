@@ -19,14 +19,14 @@ class ForexOverlap(ForexBase):
 		return X, price
 
 	def get_X_test(self):
-		X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
-		price = np.zeros((self.batch_size, self.sequence_size))
+		X = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap, len(self.technical_indicators)))
+		price = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap))
 
 		for batch in range(self.batch_size):
-			offset = int(random.random() * (self.test_size - self.sequence_size))
+			offset = int(random.random() * (self.test_size - (self.sequence_size + self.sequence_overlap)))
 
-			X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
-			price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 0]
+			X[batch, :, :] = self.TA_test[offset: (offset + (self.sequence_size + self.sequence_overlap)), :]
+			price[batch, :] = self.price_test[offset: (offset + (self.sequence_size + self.sequence_overlap)), 0]
 
 		return X, price
 

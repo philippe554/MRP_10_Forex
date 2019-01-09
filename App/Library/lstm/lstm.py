@@ -212,7 +212,7 @@ def train_step(sess, e, b):
 
     d2 = datetime.datetime.now()
     delta = d2-d1
-    debug_output("Train " + str(e) + "-" + str(b) + " ["+"%.0f" % delta.total_seconds() * 1000+"ms] :", f, n_positions)
+    debug_output("Train " + str(e) + "-" + str(b) + " ["+"%.2f" % (delta.total_seconds() * 1000)+"ms] :", f, n_positions)
 
 def test_step(sess):
     X, price = forex.get_X_test()
@@ -238,7 +238,7 @@ with tf.Session() as sess:
             train_step(sess, e, b)
 
             if b % 50 == 0 and b > 0:
-                # test_step(sess)
+                test_step(sess)
                 save_model()
 
         t_time = int(time.time() - start_time)
