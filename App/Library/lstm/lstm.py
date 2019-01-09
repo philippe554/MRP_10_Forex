@@ -16,9 +16,9 @@ l2Size = 30
 lstmSize = 20
 outputSize = 2
 sequenceSize = 60
-sequenceOverlap = 20
-batchSize = 10
-amountOfParticles = 100
+sequenceOverlap = 60
+batchSize = 20
+amountOfParticles = 300
 amountOfEpochs = 100
 
 
@@ -174,7 +174,7 @@ def run_model(sess, X, price):
     for p in range(amountOfParticles):
         loadParticle(sess, w, p)
 
-        b = datetime.datetime.now()
+        # t1 = datetime.datetime.now()
         if settings.forexType == "overlap":
             # Run the lstm multiple times with overlapping windows
             # Y = np.zeros((batchSize, sequenceOverlap, outputSize))
@@ -190,9 +190,9 @@ def run_model(sess, X, price):
         else:
             Y = sess.run(y, feed_dict={x: X})
 
-        d = datetime.datetime.now()
-        c=d-b
-        print("Running lstm took: ", c.total_seconds() * 1000, "ms")
+        # t2 = datetime.datetime.now()
+        # delta=t2-t1
+        # print("Running lstm took: ", delta.total_seconds() * 1000, "ms")
 
         f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
@@ -202,13 +202,17 @@ def debug_output(meta, f, n_positions):
     print(meta,"avg profit:", np.mean(f), "avg pos:", np.mean(n_positions), pso.getStats())
 
 def train_step(sess, e, b):
+    d1 = datetime.datetime.now()
+
     X, price = forex.get_X_train()
 
     f, n_positions = run_model(sess, X, price)
 
     pso.update(-f)
 
-    debug_output("Train " + str(e) + "-" + str(b) + ":", f, n_positions)
+    d2 = datetime.datetime.now()
+    delta = d2-d1
+    debug_output("Train " + str(e) + "-" + str(b) + " ["+"%.0f" % delta.total_seconds() * 1000+"ms] :", f, n_positions)
 
 def test_step(sess):
     X, price = forex.get_X_test()
@@ -231,11 +235,7 @@ with tf.Session() as sess:
         start_time = time.time()
 
         for b in range(number_of_batches):
-            d1 = datetime.datetime.now()
             train_step(sess, e, b)
-            d2 = datetime.datetime.now()
-            delta=d2-d1
-            print("=== Train step took: ", delta.total_seconds() * 1000, "ms")
 
             if b % 50 == 0 and b > 0:
                 # test_step(sess)

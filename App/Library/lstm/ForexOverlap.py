@@ -1,111 +1,81 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 from App.Library.lstm.ForexBase import *
 
+
 class ForexOverlap(ForexBase):
-    def get_X_train(self):
-        X = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap, len(self.technical_indicators)))
-        price = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap))
+	def get_X_train(self):
+		X = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap, len(self.technical_indicators)))
+		price = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap))
 
-        for batch in range(self.batch_size):
-            offset = int(random.random() * (self.train_size - (self.sequence_size + self.sequence_overlap)))
+		for batch in range(self.batch_size):
+			offset = int(random.random() * (self.train_size - (self.sequence_size + self.sequence_overlap)))
 
-            X[batch, :, :] = self.TA_train[offset : (offset + (self.sequence_size + self.sequence_overlap)), :]
-            price[batch, :] = self.price_train[offset : (offset + (self.sequence_size + self.sequence_overlap)), 0]
+			X[batch, :, :] = self.TA_train[offset: (offset + (self.sequence_size + self.sequence_overlap)), :]
+			price[batch, :] = self.price_train[offset: (offset + (self.sequence_size + self.sequence_overlap)), 0]
 
-        return X, price
+		return X, price
 
-    def get_X_test(self):
-        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
-        price = np.zeros((self.batch_size, self.sequence_size))
+	def get_X_test(self):
+		X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
+		price = np.zeros((self.batch_size, self.sequence_size))
 
-        for batch in range(self.batch_size):
-            offset = int(random.random() * (self.test_size - self.sequence_size))
+		for batch in range(self.batch_size):
+			offset = int(random.random() * (self.test_size - self.sequence_size))
 
-            X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
-            price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 0]
+			X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
+			price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 0]
 
-        return X, price
+		return X, price
 
-    def calculate_profit(self, price, Y):
-        position_cost = np.ones(self.batch_size) * 0.0002
-        positions_total = 0.0;
-        pipsGained = np.zeros(self.batch_size)
-        position_long = np.zeros(self.batch_size)
-        position_short = np.zeros(self.batch_size)
-        position_long_open = np.zeros(self.batch_size)
-        position_short_open = np.zeros(self.batch_size)
+	def calculate_profit(self, price, Y):
+		# Basic idea: simulate profit that would be earned in a live environment
+		# Punish outputs that do not trade very often
 
-        for i in range(self.sequence_overlap):
-            open_long_index = Y[:, i, 0] > position_long
-            position_long_open[open_long_index] = price[open_long_index, i]
-            position_long[open_long_index] = 1
+		transaction_fee = 0.00001
+		capital = 50000
+		position_counts = np.zeros(self.batch_size)
+		balance = np.zeros(self.batch_size)
 
-            close_long_index = Y[:, i, 0] < position_long
-            pipsGained[close_long_index] += position_long_open[close_long_index] - price[close_long_index, i] - \
-                                            position_cost[close_long_index]
-            position_long[close_long_index] = 0
-            positions_total += np.sum(close_long_index);
+		for batch in range(self.batch_size):
+			price_overlap = price[batch, len(price[batch])-self.sequence_overlap:]
+			position = 0
+			buy_sequence = Y[batch, :, 0]
+			sell_sequence = Y[batch, :, 1]
 
-            open_short_index = Y[:, i, 1] > position_short
-            position_short_open[open_short_index] = price[open_short_index, i]
-            position_short[open_short_index] = 1
+			# Determine the price movement in the window
+			diffs = np.diff(price_overlap)
+			movement_up = np.sum(diffs[diffs>0])
+			movement_down = np.sum(diffs[diffs<0])
 
-            close_short_index = Y[:, i, 1] < position_short
-            pipsGained[close_short_index] += price[close_short_index, i] - position_short_open[close_short_index] - \
-                                             position_cost[close_short_index]
-            position_short[close_short_index] = 0
-            positions_total += np.sum(close_short_index);
+			bought = []
+			sold = []
+			for i in range(self.sequence_overlap):
+				if position == 0 and buy_sequence[i] > 0 and sell_sequence[i] == 0 and np.max(sell_sequence[i:]) > 0:
+					# Open a new position at the current rate
+					bought.append(i)
+					position = price_overlap[i]
+					position_counts[batch] += 1
+				elif position != 0 and sell_sequence[i] > 0:
+					# Close the current position
+					sold.append(i)
+					balance[batch] += capital * ((price_overlap[i] - position) - transaction_fee)
+					position = 0
 
-        close_long_index = 0 < position_long
-        pipsGained[close_long_index] += position_long_open[close_long_index] - price[close_long_index, i] - \
-                                        position_cost[close_long_index]
-        position_long[close_long_index] = 0
-        positions_total += np.sum(close_long_index);
+			# Debug plots
+			if False and balance[batch] > 0:
+				fig, ax1 = plt.subplots()
+				ax1.set_title("Gross profit/loss: " + "%.5f" % balance[batch] + "$")
+				# ax2 = ax1.twinx()
+				ax1.plot(price_overlap, '-k')
+				# ax1.plot(np.where(buy_sequence > 0)[0].tolist(), price_overlap[np.where(buy_sequence > 0)[0].tolist()].tolist(), 'rP') # buy signals
+				# ax1.plot(np.where(sell_sequence > 0)[0].tolist(), price_overlap[np.where(sell_sequence > 0)[0].tolist()].tolist(), 'bx') # sell signals
+				ax1.plot(bought, price_overlap[bought].tolist(), 'rP') # buy signals
+				ax1.plot(sold, price_overlap[sold].tolist(), 'bx') # sell signals
+				ax1.set_xlabel('timestep (min)')
+				ax1.set_ylabel('EUR/USD rate')
+				plt.show()
 
-        close_short_index = 0 < position_short
-        pipsGained[close_short_index] += price[close_short_index, i] - position_short_open[close_short_index] - \
-                                         position_cost[close_short_index]
-        position_short[close_short_index] = 0
-        positions_total += np.sum(close_short_index);
-
-        return np.mean(pipsGained), positions_total / self.batch_size
-
-    def calculate_profit_check(self, price, Y):
-        position_cost = 0.0002
-        positions_total = 0.0
-        pipsGained = np.zeros(self.batch_size)
-
-        for j in range(self.batch_size):
-            position_long = 0
-            position_short = 0
-            position_long_open = 0
-            position_short_open = 0
-            for i in range(self.sequence_size):
-                if Y[j, i, 0] > position_long:
-                    position_long_open = price[j, i]
-                    position_long = 1
-                if Y[j, i, 0] < position_long:
-                    pipsGained[j] += position_long_open - price[j, i] - position_cost
-                    position_long = 0
-                    positions_total += 1
-
-
-                if Y[j, i, 1] > position_short:
-                    position_short_open = price[j, i]
-                    position_short  = 1
-                if Y[j, i, 1] < position_short:
-                    pipsGained[j] += price[j, i] - position_short_open - position_cost
-                    position_short = 0
-                    positions_total += 1
-
-            if Y[j, i, 0] < position_long:
-                pipsGained[j] += position_long_open - price[j, i] - position_cost
-                positions_total += 1
-
-            if Y[j, i, 1] < position_short:
-                pipsGained[j] += price[j, i] - position_short_open - position_cost
-                positions_total += 1
-
-        return np.mean(pipsGained), positions_total / self.batch_size
+		return np.mean(balance), np.sum(position_counts) / self.batch_size
