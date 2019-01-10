@@ -1,3 +1,9 @@
+# Fix pythonpath if executing on cluster
+import sys
+if any("rwthfs" in s for s in sys.path):
+    sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
+    sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
+
 import datetime
 import pickle
 import time

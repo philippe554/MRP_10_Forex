@@ -31,6 +31,70 @@ class ForexOverlap(ForexBase):
 		return X, price
 
 	def calculate_profit(self, price, Y):
+		return self.calculate_profit_simulate(price, Y)
+
+	def calculate_profit_simulate(self, price, Y):
+		# Basic idea: simulate profit that would be earned in a live environment
+		# Punish outputs that do not trade very often
+
+		commission = 4  # Dollar per 100k traded
+		capital = 50000
+		transaction_fee = (capital / 100000) * commission
+		min_buy_signals = 1  # Wait for this number of signals before buying
+
+		position_counts = np.zeros(self.batch_size)
+		balance = np.zeros(self.batch_size)
+
+		for batch in range(self.batch_size):
+			price_overlap = price[batch, len(price[batch])-self.sequence_overlap:]
+			position = 0
+			buy_sequence = Y[batch, :, 0]
+			sell_sequence = Y[batch, :, 1]
+
+			bought = []
+			sold = []
+			num_buy = 0
+			for i in range(self.sequence_overlap):
+				if position == 0 and buy_sequence[i] > 0 and sell_sequence[i] == 0 and np.max(sell_sequence[i:]) > 0:
+					num_buy += 1
+					if num_buy >= min_buy_signals:
+						# Open a new position at the current rate
+						bought.append(i)
+						position = price_overlap[i]
+						position_counts[batch] += 1
+				elif position != 0 and sell_sequence[i] > 0:
+					# Close the current position
+					num_buy = 0
+					sold.append(i)
+					balance[batch] += (capital * (price_overlap[i] - position)) - transaction_fee
+					position = 0
+				elif buy_sequence[i] == 0:
+					num_buy = 0
+
+			# Debug plots
+			# if True and balance[batch] > 0:
+			if False and balance[batch] < 0:
+				fig, ax1 = plt.subplots()
+				ax1.set_title("Gross profit/loss: " + "%.5f" % balance[batch] + "$")
+				# ax2 = ax1.twinx()
+				ax1.plot(price_overlap, '-k')
+				# ax1.plot(np.where(buy_sequence > 0)[0].tolist(), price_overlap[np.where(buy_sequence > 0)[0].tolist()].tolist(), 'rP') # buy signals
+				# ax1.plot(np.where(sell_sequence > 0)[0].tolist(), price_overlap[np.where(sell_sequence > 0)[0].tolist()].tolist(), 'bx') # sell signals
+				ax1.plot(bought, price_overlap[bought].tolist(), 'rP') # buy signals
+				ax1.plot(sold, price_overlap[sold].tolist(), 'bx') # sell signals
+				ax1.set_xlabel('timestep (min)')
+				ax1.set_ylabel('EUR/USD rate')
+				plt.show()
+				temp=None  # Breakpoint here
+
+			# More trades = better
+			balance[batch] *= position_counts[batch]
+			# if position_counts[batch] == 0:
+			# 	balance[batch] = -50 # Force some trades by punishing non-trade outputs
+
+		return np.mean(balance), np.sum(position_counts) / self.batch_size
+
+	def calculate_profit_simple(self, price, Y):
 		# Basic idea: simulate profit that would be earned in a live environment
 		# Punish outputs that do not trade very often
 
@@ -49,9 +113,9 @@ class ForexOverlap(ForexBase):
 			sell_sequence = Y[batch, :, 1]
 
 			# Determine the price movement in the window
-			# diffs = np.diff(price_overlap)
-			# movement_up = np.sum(diffs[diffs>0])
-			# movement_down = np.sum(diffs[diffs<0])
+			diffs = np.diff(price_overlap)
+			movement_up = np.sum(diffs[diffs>0])
+			movement_down = np.sum(diffs[diffs<0])
 
 			bought = []
 			sold = []
