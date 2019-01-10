@@ -17,12 +17,12 @@ from App.Library.lstm.ForexRandom import ForexRandom
 from App.Library.lstm.ForexSeq import ForexSeq
 from App.Library.lstm.PSO import PSO
 
-l1Size = 4
+l1Size = 12
 l2Size = 8
-lstmSize = 6
+lstmSize = 10
 outputSize = 2
-sequenceSize = 30
-sequenceOverlap = 30
+sequenceSize = 60
+sequenceOverlap = 120
 batchSize = 100
 amountOfParticles = 100
 amountOfEpochs = 100
