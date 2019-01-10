@@ -18,7 +18,7 @@ outputSize = 2
 sequenceSize = 60
 sequenceOverlap = 60
 batchSize = 20
-amountOfParticles = 300
+amountOfParticles = 10
 amountOfEpochs = 100
 
 
@@ -199,7 +199,7 @@ def run_model(sess, X, price):
     return f, n_positions
 
 def debug_output(meta, f, n_positions):
-    print(meta,"avg profit:", np.mean(f), "avg pos:", np.mean(n_positions), pso.getStats())
+    print(meta,"avg profit:", "%.7f" % np.mean(f), "avg pos:", "%.2f" % np.mean(n_positions), pso.getStats())
 
 def train_step(sess, e, b):
     d1 = datetime.datetime.now()

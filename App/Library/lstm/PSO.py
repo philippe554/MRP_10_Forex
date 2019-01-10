@@ -17,8 +17,8 @@ class PSO:
 
         # Just some random hyper parameters i found somewhere
         self.omega = 0.7
-        self.phiP = 2 / 2.0
-        self.phiG = 2 / 2.0
+        self.phiP = 0.8
+        self.phiG = 0.7
 
     def get_particles(self):
         # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
@@ -47,9 +47,9 @@ class PSO:
 
     def getStats(self):
         stats = {}
-        stats["avgPos"] = np.mean(self.pos)
-        stats["varPos"] = np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
-        stats["avgBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
-        stats["avgSwarmBestDistance"] = np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
-        stats["avgVelocity"] = np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
+        stats["avgPos"] = "%.5f" % np.mean(self.pos)
+        stats["varPos"] = "%.5f" % np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
+        stats["avgBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
+        stats["avgSwarmBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
+        stats["avgVelocity"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
         return stats
