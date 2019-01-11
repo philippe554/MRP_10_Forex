@@ -1,7 +1,10 @@
+import random
+
 from App.Library.lstm.ForexBase import *
 
 
 class ForexRandom(ForexBase):
+
     def get_X_train(self):
         X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
         price = np.zeros((self.batch_size, self.sequence_size))

@@ -166,7 +166,8 @@ if(settings.newModel == True):
     pso.reset_particles(np.sum(variableSizes))
 
 
-def loadParticle(sess, w, p):
+
+def load_particle(sess, w, p):
     ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
     for i in range(len(ws)):
         variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
@@ -191,11 +192,9 @@ def run_model(sess, X, price):
     n_positions = np.zeros(pso.amountOfParticles)
 
     for p in range(pso.amountOfParticles):
-        loadParticle(sess, w, p)
-
-        Y = sess.run(y, feed_dict={x: X})
-
-        f[p], n_positions[p] = forex.calculate_profit(price, Y)
+		load_particle(sess, w, p)
+		Y = sess.run(y, feed_dict={x: X})
+		f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
     return f, n_positions
 
@@ -232,23 +231,45 @@ def save_model():
         pickle.dump(pso, output)
     print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
+def train():
+	with tf.Session() as sess:
+		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
+		print("The number of batches per epoch is", number_of_batches)
 
-with tf.Session() as sess:
-    number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
-    print("The number of batches per epoch is", number_of_batches)
+		for e in range(pso.amountOfEpochs):
+			forex.restart_offset_random()
+			start_time = time.time()
 
-    for e in range(pso.amountOfEpochs):
-        forex.restart_offset_random()
+			for b in range(number_of_batches):
+				train_step(sess, e, b)
+
+				if b % 50 == 0 and b > 0:
+					test_step(sess, draw=False)
+					save_model()
+			t_time = int(time.time() - start_time)
+			minutes = int(t_time / 60)
+			seconds = t_time % 60
+			print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
+
+
+def test():
+    with tf.Session() as sess:
+        number_of_batches = round(forex.test_size - pso.sequenceSize)
+        print("The number of batches is", number_of_batches)
         start_time = time.time()
-
-        for b in range(number_of_batches):
-            train_step(sess, e, b)
-
-            if b % 50 == 0 and b > 0:
-                test_step(sess, draw=True)
-                save_model()
+        for e in range(number_of_batches):
+            test_step(sess, True)
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
         seconds = t_time % 60
-        print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
+        print("Testing finished in", minutes, "minutes", seconds, "seconds")
+        # print("Money after testing:", forex.money, "number of positions:", forex.n_positions)
+
+
+if settings.useParameters and settings.test:
+    print("Testing the model...")
+    test()
+else:
+    print("Training the model...")
+    train()
