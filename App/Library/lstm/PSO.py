@@ -2,27 +2,43 @@ import numpy as np
 
 
 class PSO:
-    def __init__(self, amount_of_particles, dims):
-        self.amount_of_particles = amount_of_particles
+    def __init__(self):
+        self.l1Size = 12
+        self.l2Size = 8
+        self.lstmSize = 10
+        self.outputSize = 2
+        self.sequenceSize = 60
+        self.sequenceOverlap = 120
+        self.batchSize = 100
+        self.amountOfParticles = 100
+        self.amountOfEpochs = 100
+
+        self.omega = 0.5
+        self.phiP = 0.6
+        self.phiG = 0.8
+
+    def print_hyper_parameters(self):
+        print("l1Size =", self.l1Size, "/ l2Size =", self.l2Size, "/ lstmSize =", self.lstmSize, "/ outSize =", self.outputSize)
+        print("sequenceSize =", self.sequenceSize, "/ sequenceOverlap =", self.sequenceOverlap)
+        print("batchSize =", self.batchSize, "/ epochs =", self.amountOfEpochs)
+        print("amountParticles =",self.amountOfParticles, "/ omega =", self.omega, "/ phiP =", self.phiP, " / phiG =", self.phiG)
+
+    def reset_particles(self, dims):
+        print("Reset PSO")
+
         self.dims = dims
 
-        # TODO: properly select random distributions and initial cost
-        self.pos = np.random.rand(self.amount_of_particles, self.dims) * 2 - 1
-        self.vel = np.random.rand(self.amount_of_particles, self.dims) * 2 - 1
-        self.cost = np.full(self.amount_of_particles, 1000.0)
+        self.pos = np.random.rand(self.amountOfParticles, self.dims) * 2 - 1
+        self.vel = np.random.rand(self.amountOfParticles, self.dims) * 2 - 1
+        self.cost = np.full(self.amountOfParticles, 1000.0)
 
         # self.load_info()
         self.best_pos = self.pos
-        self.best_cost = np.full(self.amount_of_particles, 1000.0)
+        self.best_cost = np.full(self.amountOfParticles, 1000.0)
         self.best_swarm_pos = self.pos[0]  # TODO: should not be the first
         self.best_swarm_cost = 1000.0
         self.best_swarm_index = 0
         self.rogueParticle = -1
-
-        # Just some random hyper parameters i found somewhere
-        self.omega = 0.5
-        self.phiP = 0.6
-        self.phiG = 0.8
 
     def get_particles(self):
         # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
@@ -31,28 +47,28 @@ class PSO:
     def update(self, cost):
         # assert len(cost) == self.amount_of_particles
 
-        rp = np.random.rand(self.amount_of_particles, self.dims)
-        rg = np.random.rand(self.amount_of_particles, self.dims)
+        rp = np.random.rand(self.amountOfParticles, self.dims)
+        rg = np.random.rand(self.amountOfParticles, self.dims)
         self.vel = self.omega * self.vel + self.phiP * rp * (self.best_pos - self.pos) + self.phiG * rg * (
                 self.best_swarm_pos - self.pos)
         self.pos = self.pos + self.vel
 
         self.update_bests(cost)
 
-        self.rogueParticle = np.random.randint(self.amount_of_particles)
+        self.rogueParticle = np.random.randint(self.amountOfParticles)
         while self.rogueParticle ==  self.best_swarm_index:
-            self.rogueParticle = np.random.randint(self.amount_of_particles)
+            self.rogueParticle = np.random.randint(self.amountOfParticles)
 
         posStd = np.std(self.pos)
         self.pos[self.rogueParticle] = (np.random.rand(1, self.dims) * 2 - 1) * (posStd * 3)
 
     def update_bests(self, cost):
         #take the moment of the cost to smooth out outliers (particles need to build up credibility)
-        self.cost = self.cost * 0.8 + cost * 0.2
+        #self.cost = self.cost * 0.8 + cost * 0.2
 
-        #self.cost = cost # uncomment to use old method
+        self.cost = cost # uncomment to use old method
 
-        for i in range(self.amount_of_particles):
+        for i in range(self.amountOfParticles):
             if self.cost[i] < self.best_cost[i]:
                 self.best_pos[i, :] = self.pos[i, :]
                 self.best_cost[i] = self.cost[i]
