@@ -1,5 +1,6 @@
 from App.Library.Connection.Price import Price
 from ta import *
+from datetime import datetime as dt
 
 from App.Library.Enum.Period import Period
 
@@ -7,9 +8,8 @@ from App.Library.Enum.Period import Period
 class LiveTA:
 
     def __init__(self, window_size=240):
-        self.window_padding = 30  # Window padding is added to the start of the window for those indicators that need a run-up period
+        self.window_padding = 60  # Window padding is added to the start of the window for those indicators that need a run-up period
         self.data = Price.get_last_n_candles(instrument='EUR/USD', period=Period.MINUTE_1[0], n=(self.window_padding+window_size))
-        self.run_TA()
 
     def get_window_column(self, columns, offset=None, window_size=None):
         """
@@ -20,6 +20,10 @@ class LiveTA:
         :return: panda dataframe with the specified columns
         """
         return self.data[columns][self.window_padding:]
+
+    def get_last_time(self):
+        last_index = self.data.index[-1]
+        return last_index.to_pydatetime()
 
     def run_TA(self):
         """
@@ -42,3 +46,4 @@ class LiveTA:
         df['momentum_wr'] = wr(df[high], df[low], df[close], fillna=fillna)
         df['momentum_ao'] = ao(df[high], df[low], fillna=fillna)
         self.data = df
+        return self.data
