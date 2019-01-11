@@ -8,7 +8,7 @@ from App.Library.Enum.Period import Period
 class LiveTA:
 
     def __init__(self, window_size=240):
-        self.window_padding = 60  # Window padding is added to the start of the window for those indicators that need a run-up period
+        self.window_padding = 300  # Window padding is added to the start of the window for those indicators that need a run-up period
         self.data = Price.get_last_n_candles(instrument='EUR/USD', period=Period.MINUTE_1[0], n=(self.window_padding+window_size))
 
     def get_window_column(self, columns, offset=None, window_size=None):
