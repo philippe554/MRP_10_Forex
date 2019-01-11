@@ -1,6 +1,7 @@
 from App.Library.Connection.Price import Price
 from ta import *
 from datetime import datetime as dt
+import pandas as pd
 
 from App.Library.Enum.Period import Period
 
@@ -20,6 +21,13 @@ class LiveTA:
         :return: panda dataframe with the specified columns
         """
         return self.data[columns][self.window_padding:]
+
+    def get_time_index(self):
+        return self.data.index[self.window_padding:]
+
+    def get_price_data(self):
+        price_data = pd.DataFrame(data=self.get_window_column(["bidopen","bidhigh","bidlow","bidclose"]), index=self.data.index[self.window_padding:])
+        return price_data
 
     def get_last_time(self):
         last_index = self.data.index[-1]
