@@ -1,27 +1,41 @@
 import numpy as np
-
+import subprocess
+from datetime import datetime as dt
 
 class PSO:
     def __init__(self):
-        self.l1Size = 12
+        # Version info
+        try:
+            self.revision = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
+            self.branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().decode('ascii')
+        except Exception:
+            self.revision = ""
+            self.branch = ""
+        self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        self.l1Size = 4
         self.l2Size = 8
-        self.lstmSize = 10
+        self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 60
-        self.sequenceOverlap = 120
+        self.sequenceSize = 30
+        self.sequenceOverlap = 30
         self.batchSize = 100
         self.amountOfParticles = 100
         self.amountOfEpochs = 100
 
-        self.omega = 0.5
-        self.phiP = 0.6
-        self.phiG = 0.8
+        self.omega = 0.7
+        self.phiP = 0.8
+        self.phiG = 0.6
 
     def print_hyper_parameters(self):
+        print("====================")
+        print("initialized =", self.date)
+        print("branch =", self.branch, "@", self.revision)
         print("l1Size =", self.l1Size, "/ l2Size =", self.l2Size, "/ lstmSize =", self.lstmSize, "/ outSize =", self.outputSize)
         print("sequenceSize =", self.sequenceSize, "/ sequenceOverlap =", self.sequenceOverlap)
         print("batchSize =", self.batchSize, "/ epochs =", self.amountOfEpochs)
         print("amountParticles =",self.amountOfParticles, "/ omega =", self.omega, "/ phiP =", self.phiP, " / phiG =", self.phiG)
+        print("====================")
 
     def reset_particles(self, dims):
         print("Reset PSO")
@@ -83,6 +97,8 @@ class PSO:
     def getStats(self):
         stats = {}
         stats["best"] = self.best_swarm_index
+        stats["bestProfit"] = "%.3f" % -self.best_swarm_cost
+        stats["bestProfitCurrent"] = "%.3f" % -self.cost[self.best_swarm_index]  # How much profit did the best particle make in the current iteration
         stats["rogue"] = self.rogueParticle
         stats["avgPos"] = "%.5f" % np.mean(self.pos)
         stats["varPos"] = "%.5f" % np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
