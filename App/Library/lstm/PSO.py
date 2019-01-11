@@ -28,6 +28,9 @@ class PSO:
         # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
+    def get_best_particle(self):
+        return self.best_swarm_pos
+
     def update(self, cost):
         # assert len(cost) == self.amount_of_particles
 
