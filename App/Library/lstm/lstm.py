@@ -18,122 +18,9 @@ from App.Library.lstm.ForexRandom import ForexRandom
 from App.Library.lstm.ForexSeq import ForexSeq
 from App.Library.lstm.PSO import PSO
 
-l1Size = 12
-l2Size = 8
-lstmSize = 10
-outputSize = 2
-sequenceSize = 60
-sequenceOverlap = 120
-batchSize = 100
-amountOfParticles = 100
-amountOfEpochs = 100
-
-
-def forex_type():
-    type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
-    if type == 1:
-        forex = ForexRandom(batchSize, sequenceSize, sequenceOverlap, outputSize)
-    elif type == 2:
-        forex = ForexSeq(batchSize, sequenceSize, sequenceOverlap, outputSize)
-    else:
-        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
-
-    return forex
-
-
-if settings.useParameters:
-    if settings.forexType == "random":
-        forex = ForexRandom(batchSize, sequenceSize, sequenceOverlap, outputSize)
-    elif settings.forexType == "overlap":
-        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
-    elif settings.forexType == "seq":
-        forex = ForexOverlap(batchSize, sequenceSize, sequenceOverlap, outputSize)
-    else:
-        forex = forex_type()
-else:
-    forex = forex_type()
-
-inputSize = len(forex.technical_indicators)
-
-variables = {
-    'l1': tf.Variable(tf.random_normal([inputSize, l1Size])),
-    'l1b': tf.Variable(tf.random_normal([l1Size])),
-    'l2': tf.Variable(tf.random_normal([l1Size, l2Size])),
-    'l2b': tf.Variable(tf.random_normal([l2Size])),
-    'l3': tf.Variable(tf.random_normal([lstmSize, outputSize])),
-    'l3b': tf.Variable(tf.random_normal([outputSize]))
-}
-
-
-def check(M, l):
-    if M.get_shape().as_list() != l:
-        print(M.get_shape().as_list())
-        assert False
-
-
-def batchMatMul(M, N):
-    return tf.reshape(tf.reshape(M, [-1, M.get_shape()[-1]]) @ N, [-1, M.get_shape()[-2], N.get_shape()[-1]])
-
-
-def buildNN(x):
-    # x is input of neural network, size: (Batch size * Amount of timesteps * amount of technical indicators)
-
-    # Feed forward layer. (batchMatMul is a TF trick to not have to split it)
-    x = tf.nn.relu(batchMatMul(x, variables['l1']) + variables['l1b'])
-    check(x, [None, sequenceSize, l1Size])
-
-    x = tf.nn.relu(batchMatMul(x, variables['l2']) + variables['l2b'])
-    check(x, [None, sequenceSize, l2Size])
-
-    x = tf.unstack(x, sequenceSize, 1)
-    cell1 = tf.nn.rnn_cell.LSTMCell(lstmSize)
-    outputs, states = tf.nn.static_rnn(cell1, x, dtype=tf.float32)
-    x = tf.stack(outputs, 1)
-    check(x, [None, sequenceSize, lstmSize])
-
-    x = tf.nn.sigmoid(batchMatMul(x, variables['l3']) + variables['l3b'])
-    check(x, [None, sequenceSize, outputSize])
-
-    return tf.round(x)
-
-
-def buildNNOverlap(x):
-    check(x, [None, sequenceSize + sequenceOverlap, inputSize])
-
-    x = tf.stack([x[:, i:i + sequenceSize, :] for i in range(sequenceOverlap)], axis=1)
-    check(x, [None, sequenceOverlap, sequenceSize, inputSize])
-
-    # Merge the batch dimension with the overlap dimension, for tensorflow they are both batches
-    x = tf.reshape(x, shape=[-1, sequenceSize, inputSize])
-    check(x, [None, sequenceSize, inputSize])
-
-    x = buildNN(x)
-    check(x, [None, sequenceSize, outputSize])
-
-    # Unfold the merge
-    x = tf.reshape(x, shape=[-1, sequenceOverlap, sequenceSize, outputSize])
-    check(x, [None, sequenceOverlap, sequenceSize, outputSize])
-
-    x = x[:, :, -1, :]
-    check(x, [None, sequenceOverlap, outputSize])
-
-    return x
-
-
-if settings.forexType == "overlap":
-    x = tf.placeholder("float", [None, sequenceSize + sequenceOverlap, inputSize])
-    y = buildNNOverlap(x)
-else:
-    x = tf.placeholder("float", [None, sequenceSize, inputSize])
-    y = buildNN(x)
-
-variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
-variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
-print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
-
 if settings.useParameters:
     if settings.newModel:
-        pso = PSO(amountOfParticles, np.sum(variableSizes))
+        pso = PSO()
         print("New PSO created")
     else:
         try:
@@ -154,7 +41,7 @@ else:
     newPSO = input("Do you want to load the previous PSO if exists? (y/n) ").lower() == "n"
 
     if newPSO:
-        pso = PSO(amountOfParticles, np.sum(variableSizes))
+        pso = PSO()
         print("New PSO created")
     else:
         try:
@@ -165,10 +52,118 @@ else:
             create_new = input(
                 "It was not possible to load the PSO, do you want to continue with a new PSO? (y/n) ").lower() == "y"
             if create_new:
-                pso = PSO(amountOfParticles, np.sum(variableSizes))
+                pso = PSO()
                 print("New PSO created")
             else:
                 raise Exception(e)
+
+
+pso.print_hyper_parameters()
+
+def forex_type():
+    type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
+    if type == 1:
+        forex = ForexRandom(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+    elif type == 2:
+        forex = ForexSeq(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+    else:
+        forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+
+    return forex
+
+
+if settings.useParameters:
+    if settings.forexType == "random":
+        forex = ForexRandom(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+    elif settings.forexType == "overlap":
+        forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+    elif settings.forexType == "seq":
+        forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+    else:
+        forex = forex_type()
+else:
+    forex = forex_type()
+
+inputSize = len(forex.technical_indicators)
+
+variables = {
+    'l1': tf.Variable(tf.random_normal([inputSize, pso.l1Size])),
+    'l1b': tf.Variable(tf.random_normal([pso.l1Size])),
+    'l2': tf.Variable(tf.random_normal([pso.l1Size, pso.l2Size])),
+    'l2b': tf.Variable(tf.random_normal([pso.l2Size])),
+    'l3': tf.Variable(tf.random_normal([pso.lstmSize, pso.outputSize])),
+    'l3b': tf.Variable(tf.random_normal([pso.outputSize]))
+}
+
+
+def check(M, l):
+    if M.get_shape().as_list() != l:
+        print(M.get_shape().as_list())
+        assert False
+
+
+def batchMatMul(M, N):
+    return tf.reshape(tf.reshape(M, [-1, M.get_shape()[-1]]) @ N, [-1, M.get_shape()[-2], N.get_shape()[-1]])
+
+
+def buildNN(x):
+    # x is input of neural network, size: (Batch size * Amount of timesteps * amount of technical indicators)
+
+    # Feed forward layer. (batchMatMul is a TF trick to not have to split it)
+    x = tf.nn.relu(batchMatMul(x, variables['l1']) + variables['l1b'])
+    check(x, [None, pso.sequenceSize, pso.l1Size])
+
+    x = tf.nn.relu(batchMatMul(x, variables['l2']) + variables['l2b'])
+    check(x, [None, pso.sequenceSize, pso.l2Size])
+
+    x = tf.unstack(x, pso.sequenceSize, 1)
+    cell1 = tf.nn.rnn_cell.LSTMCell(pso.lstmSize)
+    outputs, states = tf.nn.static_rnn(cell1, x, dtype=tf.float32)
+    x = tf.stack(outputs, 1)
+    check(x, [None, pso.sequenceSize, pso.lstmSize])
+
+    x = tf.nn.sigmoid(batchMatMul(x, variables['l3']) + variables['l3b'])
+    check(x, [None, pso.sequenceSize, pso.outputSize])
+
+    return tf.round(x)
+
+
+def buildNNOverlap(x):
+    check(x, [None, pso.sequenceSize + pso.sequenceOverlap, inputSize])
+
+    x = tf.stack([x[:,i:i+pso.sequenceSize,:] for i in range(pso.sequenceOverlap)], axis=1)
+    check(x, [None, pso.sequenceOverlap, pso.sequenceSize, inputSize])
+
+    # Merge the batch dimension with the overlap dimension, for tensorflow they are both batches
+    x = tf.reshape(x, shape=[-1, pso.sequenceSize, inputSize])
+    check(x, [None, pso.sequenceSize, inputSize])
+
+    x = buildNN(x)
+    check(x, [None, pso.sequenceSize, pso.outputSize])
+
+    # Unfold the merge
+    x = tf.reshape(x, shape=[-1, pso.sequenceOverlap, pso.sequenceSize, pso.outputSize])
+    check(x, [None, pso.sequenceOverlap, pso.sequenceSize, pso.outputSize])
+
+    x = x[:,:,-1,:]
+    check(x, [None, pso.sequenceOverlap, pso.outputSize])
+
+    return x
+
+
+if settings.forexType == "overlap":
+    x = tf.placeholder("float", [None, pso.sequenceSize + pso.sequenceOverlap, inputSize])
+    y = buildNNOverlap(x)
+else:
+    x = tf.placeholder("float", [None, pso.sequenceSize, inputSize])
+    y = buildNN(x)
+
+variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
+print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
+
+if(settings.newModel == True):
+    pso.reset_particles(np.sum(variableSizes))
 
 
 def loadParticle(sess, w, p):
@@ -192,31 +187,13 @@ def run_model_test(sess, X, price, draw):
 
 def run_model(sess, X, price):
     w = pso.get_particles()
-    f = np.zeros(amountOfParticles)
-    n_positions = np.zeros(amountOfParticles)
+    f = np.zeros(pso.amountOfParticles)
+    n_positions = np.zeros(pso.amountOfParticles)
 
-    for p in range(amountOfParticles):
+    for p in range(pso.amountOfParticles):
         loadParticle(sess, w, p)
 
-        # t1 = datetime.datetime.now()
-        if settings.forexType == "overlap":
-            # Run the lstm multiple times with overlapping windows
-            # Y = np.zeros((batchSize, sequenceOverlap, outputSize))
-            # for overlap_offset in range(sequenceOverlap):
-            #     window = X[:, overlap_offset:sequenceSize+overlap_offset]
-            #     interval = sess.run(y, feed_dict={x: window})
-            #
-            #     # Output:
-            #     Y[:,overlap_offset] = interval[:,len(interval[:])-1]
-
-            Y = sess.run(y, feed_dict={x: X})
-
-        else:
-            Y = sess.run(y, feed_dict={x: X})
-
-        # t2 = datetime.datetime.now()
-        # delta=t2-t1
-        # print("Running lstm took: ", delta.total_seconds() * 1000, "ms")
+        Y = sess.run(y, feed_dict={x: X})
 
         f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
@@ -257,10 +234,10 @@ def save_model():
 
 
 with tf.Session() as sess:
-    number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
+    number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
     print("The number of batches per epoch is", number_of_batches)
 
-    for e in range(amountOfEpochs):
+    for e in range(pso.amountOfEpochs):
         forex.restart_offset_random()
         start_time = time.time()
 
