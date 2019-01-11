@@ -1,5 +1,6 @@
 # Fix pythonpath if executing on cluster
 import sys
+
 if any("rwthfs" in s for s in sys.path):
     sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
     sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
@@ -95,10 +96,11 @@ def buildNN(x):
 
     return tf.round(x)
 
+
 def buildNNOverlap(x):
     check(x, [None, sequenceSize + sequenceOverlap, inputSize])
 
-    x = tf.stack([x[:,i:i+sequenceSize,:] for i in range(sequenceOverlap)], axis=1)
+    x = tf.stack([x[:, i:i + sequenceSize, :] for i in range(sequenceOverlap)], axis=1)
     check(x, [None, sequenceOverlap, sequenceSize, inputSize])
 
     # Merge the batch dimension with the overlap dimension, for tensorflow they are both batches
@@ -112,10 +114,11 @@ def buildNNOverlap(x):
     x = tf.reshape(x, shape=[-1, sequenceOverlap, sequenceSize, outputSize])
     check(x, [None, sequenceOverlap, sequenceSize, outputSize])
 
-    x = x[:,:,-1,:]
+    x = x[:, :, -1, :]
     check(x, [None, sequenceOverlap, outputSize])
 
     return x
+
 
 if settings.forexType == "overlap":
     x = tf.placeholder("float", [None, sequenceSize + sequenceOverlap, inputSize])
@@ -167,10 +170,25 @@ else:
             else:
                 raise Exception(e)
 
+
 def loadParticle(sess, w, p):
     ws = np.split(w[p, :], np.cumsum(variableSizes))[:-1]
     for i in range(len(ws)):
         variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+
+def run_model_test(sess, X, price, draw):
+    w = pso.get_best_particle()
+    ws = np.split(w, np.cumsum(variableSizes))[:-1]
+
+    for i in range(len(ws)):
+        variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+    Y = sess.run(y, feed_dict={x: X})
+    f = forex.calculate_profit_test(price, Y, draw)
+
+    return f
+
 
 def run_model(sess, X, price):
     w = pso.get_particles()
@@ -204,8 +222,10 @@ def run_model(sess, X, price):
 
     return f, n_positions
 
+
 def debug_output(meta, f, n_positions):
-    print(meta,"avg profit:", "%.7f" % np.mean(f), "avg pos:", "%.2f" % np.mean(n_positions), pso.getStats())
+    print(meta, "avg profit:", "%.7f" % np.mean(f), "avg pos:", "%.2f" % np.mean(n_positions), pso.getStats())
+
 
 def train_step(sess, e, b):
     d1 = datetime.datetime.now()
@@ -217,20 +237,24 @@ def train_step(sess, e, b):
     pso.update(-f)
 
     d2 = datetime.datetime.now()
-    delta = d2-d1
-    debug_output("Train " + str(e) + "-" + str(b) + " ["+"%.2f" % (delta.total_seconds() * 1000)+"ms] :", f, n_positions)
+    delta = d2 - d1
+    debug_output("Train " + str(e) + "-" + str(b) + " [" + "%.2f" % (delta.total_seconds() * 1000) + "ms] :", f,
+                 n_positions)
 
-def test_step(sess):
+
+def test_step(sess, draw=False):
     X, price = forex.get_X_test()
 
-    f, n_positions = run_model(sess, X, price)
+    f, n_positions = run_model_test(sess, X, price, draw)
 
     debug_output("Test:", f, n_positions)
+
 
 def save_model():
     with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
         pickle.dump(pso, output)
     print("Model saved in folder", path_to_save + '/model_parameters.pkl')
+
 
 with tf.Session() as sess:
     number_of_batches = round(forex.train_size / (sequenceSize * batchSize))
@@ -244,7 +268,7 @@ with tf.Session() as sess:
             train_step(sess, e, b)
 
             if b % 50 == 0 and b > 0:
-                test_step(sess)
+                test_step(sess, draw=True)
                 save_model()
 
         t_time = int(time.time() - start_time)

@@ -28,6 +28,9 @@ class PSO:
         # assert list(np.shape(self.pos)) == [self.amount_of_particles, self.dims]
         return self.pos
 
+    def get_best_particle(self):
+        return self.best_swarm_pos
+
     def update(self, cost):
         # assert len(cost) == self.amount_of_particles
 
@@ -40,17 +43,17 @@ class PSO:
         self.update_bests(cost)
 
         self.rogueParticle = np.random.randint(self.amount_of_particles)
-        while self.rogueParticle ==  self.best_swarm_index:
+        while self.rogueParticle == self.best_swarm_index:
             self.rogueParticle = np.random.randint(self.amount_of_particles)
 
         posStd = np.std(self.pos)
         self.pos[self.rogueParticle] = (np.random.rand(1, self.dims) * 2 - 1) * (posStd * 3)
 
     def update_bests(self, cost):
-        #take the moment of the cost to smooth out outliers (particles need to build up credibility)
+        # take the moment of the cost to smooth out outliers (particles need to build up credibility)
         self.cost = self.cost * 0.8 + cost * 0.2
 
-        #self.cost = cost # uncomment to use old method
+        # self.cost = cost # uncomment to use old method
 
         for i in range(self.amount_of_particles):
             if self.cost[i] < self.best_cost[i]:
@@ -69,6 +72,7 @@ class PSO:
         stats["avgPos"] = "%.5f" % np.mean(self.pos)
         stats["varPos"] = "%.5f" % np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
         stats["avgBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
-        stats["avgSwarmBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
+        stats["avgSwarmBestDistance"] = "%.3f" % np.mean(
+            np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
         stats["avgVelocity"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
         return stats

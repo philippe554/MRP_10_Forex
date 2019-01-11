@@ -100,3 +100,6 @@ class ForexBase:
 
     def restart_offset_random(self):
         pass
+
+    def calculate_profit_test(self, price, Y, draw):
+        return 0
