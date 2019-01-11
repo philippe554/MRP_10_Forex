@@ -57,8 +57,8 @@ else:
             else:
                 raise Exception(e)
 
-
 pso.print_hyper_parameters()
+
 
 def forex_type():
     type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
@@ -131,7 +131,7 @@ def buildNN(x):
 def buildNNOverlap(x):
     check(x, [None, pso.sequenceSize + pso.sequenceOverlap, inputSize])
 
-    x = tf.stack([x[:,i:i+pso.sequenceSize,:] for i in range(pso.sequenceOverlap)], axis=1)
+    x = tf.stack([x[:, i:i + pso.sequenceSize, :] for i in range(pso.sequenceOverlap)], axis=1)
     check(x, [None, pso.sequenceOverlap, pso.sequenceSize, inputSize])
 
     # Merge the batch dimension with the overlap dimension, for tensorflow they are both batches
@@ -145,7 +145,7 @@ def buildNNOverlap(x):
     x = tf.reshape(x, shape=[-1, pso.sequenceOverlap, pso.sequenceSize, pso.outputSize])
     check(x, [None, pso.sequenceOverlap, pso.sequenceSize, pso.outputSize])
 
-    x = x[:,:,-1,:]
+    x = x[:, :, -1, :]
     check(x, [None, pso.sequenceOverlap, pso.outputSize])
 
     return x
@@ -162,9 +162,8 @@ variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 variableSizes = [np.prod(v.get_shape().as_list()) for v in variables]
 print("Variables:", variableSizes, "Total:", np.sum(variableSizes))
 
-if(settings.newModel == True):
+if (settings.newModel == True):
     pso.reset_particles(np.sum(variableSizes))
-
 
 
 def load_particle(sess, w, p):
@@ -192,9 +191,9 @@ def run_model(sess, X, price):
     n_positions = np.zeros(pso.amountOfParticles)
 
     for p in range(pso.amountOfParticles):
-		load_particle(sess, w, p)
-		Y = sess.run(y, feed_dict={x: X})
-		f[p], n_positions[p] = forex.calculate_profit(price, Y)
+        load_particle(sess, w, p)
+        Y = sess.run(y, feed_dict={x: X})
+        f[p], n_positions[p] = forex.calculate_profit(price, Y)
 
     return f, n_positions
 
@@ -224,6 +223,7 @@ def test_step(sess, draw=False):
     f, n_positions = run_model_test(sess, X, price, draw)
 
     debug_output("Test:", f, n_positions)
+    return f, n_positions
 
 
 def save_model():
@@ -231,25 +231,26 @@ def save_model():
         pickle.dump(pso, output)
     print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
+
 def train():
-	with tf.Session() as sess:
-		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
-		print("The number of batches per epoch is", number_of_batches)
+    with tf.Session() as sess:
+        number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
+        print("The number of batches per epoch is", number_of_batches)
 
-		for e in range(pso.amountOfEpochs):
-			forex.restart_offset_random()
-			start_time = time.time()
+        for e in range(pso.amountOfEpochs):
+            forex.restart_offset_random()
+            start_time = time.time()
 
-			for b in range(number_of_batches):
-				train_step(sess, e, b)
+            for b in range(number_of_batches):
+                train_step(sess, e, b)
 
-				if b % 50 == 0 and b > 0:
-					test_step(sess, draw=False)
-					save_model()
-			t_time = int(time.time() - start_time)
-			minutes = int(t_time / 60)
-			seconds = t_time % 60
-			print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
+                if b % 50 == 0 and b > 0:
+                    test_step(sess, draw=False)
+                    save_model()
+            t_time = int(time.time() - start_time)
+            minutes = int(t_time / 60)
+            seconds = t_time % 60
+            print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
 
 
 def test():
@@ -257,17 +258,21 @@ def test():
         number_of_batches = round(forex.test_size - pso.sequenceSize)
         print("The number of batches is", number_of_batches)
         start_time = time.time()
+        total_profit = 0
         for e in range(number_of_batches):
-            test_step(sess, True)
+            f, n_positions = test_step(sess, True)
+            total_profit += np.mean(f)
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
         seconds = t_time % 60
+        print("Total profit after testing:", total_profit)
         print("Testing finished in", minutes, "minutes", seconds, "seconds")
-        # print("Money after testing:", forex.money, "number of positions:", forex.n_positions)
 
 
 if settings.useParameters and settings.test:
+    if settings.newModel:
+        raise Exception("You cannot train a new model")
     print("Testing the model...")
     test()
 else:
