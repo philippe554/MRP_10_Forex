@@ -205,6 +205,9 @@ with tf.Session() as sess:
 			debug_output("Running TA on live data")
 			if simulate:
 				pricedata = liveTA.get_price_data()[pso.sequenceOverlap:]
+				pricedata.insert(0, 't', pricedata.index)
+				pricedata['t'] = pd.to_datetime(pricedata['t'])
+				pricedata['t'] = pricedata['t'].apply(mdates.date2num)
 			liveTA.run_TA()
 			data = liveTA.get_window_column(forex.technical_indicators).values
 
@@ -250,26 +253,26 @@ with tf.Session() as sess:
 
 				# Draw
 				fig, ax = plt.subplots()
-				pricedata.insert(0, 't', pricedata.index)
-				pricedata['t'] = pd.to_datetime(pricedata['t'])
-				pricedata['t'] = pricedata['t'].apply(mdates.date2num)
 				ax.xaxis_date()
 				ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 				plt.xticks(rotation=45)
-				_ = candlestick_ohlc(ax, pricedata.values, width=.0003, colorup='g', alpha = .7)
-				ax.plot(
-					pricedata['t'][bought],
-					pricedata['bidopen'][bought], 'kP', label='buy signal')
-				ax.plot(
-					pricedata['t'][sold],
-					pricedata['bidopen'][sold], 'bx', label='sell signal')
+				_ = candlestick_ohlc(ax, pricedata.values, width=.0005, colorup='#64a053', colordown='#cc4b4b', alpha=1)
+
+				# Signals
 				ymax = pricedata["bidhigh"].max()
 				ymin = pricedata["bidlow"].min()
+				ax.plot(
+					pricedata['t'][bought],
+					pricedata['bidhigh'][bought] + (ymax-ymin)*.05, 'k+', label='buy signal')
+				ax.plot(
+					pricedata['t'][sold],
+					pricedata['bidhigh'][sold] + (ymax-ymin)*.05, 'bx', label='sell signal')
 				ax.legend()
-				ax.plot(pricedata['t'][np.where(buy_sequence > 0)[0].tolist()], np.full(len(np.where(buy_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.05), 'kP', label='buy signal')
+				ax.plot(pricedata['t'][np.where(buy_sequence > 0)[0].tolist()], np.full(len(np.where(buy_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.05), 'k+', label='buy signal')
 				ax.plot(pricedata['t'][np.where(sell_sequence > 0)[0].tolist()], np.full(len(np.where(sell_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.1), 'bx', label='sell signal')
+
 				ax.set_ylabel("EUR/USD")
-				ax.set_xlabel(last_run_start.strftime("%Y-%m-%d"))
+				ax.set_xlabel(last_run_start.strftime("%Y-%m-%d") + " UTC")
 				ax.set_title("Gross profit/loss: " + "%.3f" % balance + "$")
 				fig.autofmt_xdate()
 				fig.tight_layout()
