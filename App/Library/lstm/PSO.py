@@ -18,10 +18,10 @@ class PSO:
         self.l2Size = 8
         self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 60
-        self.sequenceOverlap = 60
+        self.sequenceSize = 30
+        self.sequenceOverlap = 120
         self.batchSize = 100
-        self.amountOfParticles = 300
+        self.amountOfParticles = 100
         self.amountOfEpochs = 100
 
         self.omega = 0.7
@@ -46,14 +46,14 @@ class PSO:
 
         self.pos = np.random.rand(self.amountOfParticles, self.dims) * 2 - 1
         self.vel = np.random.rand(self.amountOfParticles, self.dims) * 2 - 1
-        self.cost = np.full(self.amountOfParticles, 1000.0)
+        self.cost = np.full(self.amountOfParticles, 10000.0)
 
         # self.load_info()
         self.best_pos = self.pos
-        self.best_cost = np.full(self.amountOfParticles, 1000.0)
-        self.best_swarm_pos = self.pos[0]  # TODO: should not be the first
-        self.best_swarm_cost = 1000.0
-        self.best_swarm_index = 0
+        self.best_cost = np.full(self.amountOfParticles, 10000.0)
+        self.best_swarm_pos = None
+        self.best_swarm_cost = None
+        self.best_swarm_index = None
         self.rogueParticle = -1
 
     def get_particles(self):
@@ -66,13 +66,13 @@ class PSO:
     def update(self, cost):
         # assert len(cost) == self.amount_of_particles
 
+        self.update_bests(cost)
+
         rp = np.random.rand(self.amountOfParticles, self.dims)
         rg = np.random.rand(self.amountOfParticles, self.dims)
         self.vel = self.omega * self.vel + self.phiP * rp * (self.best_pos - self.pos) + self.phiG * rg * (
                 self.best_swarm_pos - self.pos)
         self.pos = self.pos + self.vel
-
-        self.update_bests(cost)
 
         self.rogueParticle = np.random.randint(self.amountOfParticles)
         while self.rogueParticle == self.best_swarm_index:
@@ -91,7 +91,7 @@ class PSO:
                 self.best_pos[i, :] = self.pos[i, :]
                 self.best_cost[i] = self.cost[i]
 
-                if self.cost[i] < self.best_swarm_cost:
+                if self.best_swarm_cost is None or self.cost[i] < self.best_swarm_cost:
                     self.best_swarm_pos = self.pos[i, :]
                     self.best_swarm_cost = self.cost[i]
                     self.best_swarm_index = i

@@ -11,12 +11,12 @@
 #BSUB -u cjnj.kerkhofs@student.maastrichtuniversity.nl
 
 ### File / path where STDOUT will be written, the %J is the job id
-#BSUB -o Testing_MRP10.%J_%I
+#BSUB -o Output/Testing_MRP10.%J_%I
 
 ### Request the time you need for execution in minutes
 ### The format for the parameter is: [hour:]minute,
 ### that means for 80 minutes you could also use this: 1:20
-#BSUB -W 15:00
+#BSUB -W 12:00
 
 ### Request memory you need for your job in MB
 #BSUB -M 4000
