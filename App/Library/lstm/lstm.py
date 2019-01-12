@@ -1,16 +1,16 @@
 # Fix pythonpath if executing on cluster
 import sys
 
+drawEnabled = False
 if any("rwthfs" in s for s in sys.path):
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
-
-drawEnabled = False
-try:
-	import matplotlib.pyplot as plt
-	drawEnabled = True
-except ImportError:
-	print("Drawing plots is disabled, make sure you have the matplotlib module installed")
+else:
+	try:
+		import matplotlib.pyplot as plt
+		drawEnabled = True
+	except ImportError:
+		print("Drawing plots is disabled, make sure you have the matplotlib module installed")
 
 import datetime
 import pickle
@@ -245,7 +245,7 @@ def train_step(sess, e, b):
 
 
 def test_step(sess, draw=False):
-	test_size = 3000  # Run test on a larger batch
+	test_size = 500  # Run test on a larger batch
 	X, price = forex.get_X_test(test_size)
 
 	if settings.forexType == 'seq':
@@ -387,7 +387,7 @@ def simulate_real_test(sess, test_window):
 
 
 def train():
-	test_every = 5  # Run the test every N iterations
+	test_every = 50  # Run the test every N iterations
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)

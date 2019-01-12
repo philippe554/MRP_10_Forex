@@ -1,17 +1,18 @@
 import random
+import sys
 
 drawEnabled = False
-try:
-	import matplotlib.pyplot as plt
-	from mpl_finance import candlestick_ohlc
-	from matplotlib import dates as mdates
+if not any("rwthfs" in s for s in sys.path):
+	try:
+		import matplotlib.pyplot as plt
+		from mpl_finance import candlestick_ohlc
+		from matplotlib import dates as mdates
 
-	drawEnabled = True
-except ImportError:
-	print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
+		drawEnabled = True
+	except ImportError:
+		print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
 
 from App.Library.lstm.ForexBase import *
-
 
 class ForexOverlap(ForexBase):
 	def get_X_train(self):
