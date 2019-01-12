@@ -237,9 +237,9 @@ class ForexOverlap(ForexBase):
                 print("No positions open in this batch")
 
         # Debug plots
+        profit = capital - start_capital
         if draw:
             fig, ax1 = plt.subplots()
-            profit = capital - start_capital
             ax1.set_title("Gross profit/loss: " + "%.3f" % profit + "$ corresponding to %.2f" % (
                     profit * 100 / start_capital) + "%")
             ax1.plot(price_h, '-k')
@@ -251,4 +251,4 @@ class ForexOverlap(ForexBase):
             plt.show()
             temp = None  # Breakpoint here
 
-        return capital, position_counts
+        return profit, position_counts
