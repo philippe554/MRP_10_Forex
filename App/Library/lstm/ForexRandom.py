@@ -34,7 +34,7 @@ class ForexRandom(ForexBase):
 
     def calculate_profit(self, price, Y):
         batch_size = len(price)
-        position_cost = np.ones(batch_size) * 0.0002
+        position_cost = np.ones(batch_size) * 0.00008
         positions_total = 0.0
         pips_gained = np.zeros(batch_size)
         position_long = np.zeros(batch_size)
