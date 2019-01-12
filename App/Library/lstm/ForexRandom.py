@@ -10,10 +10,10 @@ class ForexRandom(ForexBase):
         price = np.zeros((self.batch_size, self.sequence_size))
 
         for batch in range(self.batch_size):
-            offset = int(random.random() * (self.train_size - self.sequence_size))
+            offset = int(random.random() * (self.train_size - self.sequence_size - 1))
 
             X[batch, :, :] = self.TA_train[offset: (offset + self.sequence_size), :]
-            price[batch, :] = self.price_train[offset: (offset + self.sequence_size), 1]
+            price[batch, :] = self.price_train[offset + 1: (offset + self.sequence_size) + 1, 1]
 
         return X, price
 
@@ -22,10 +22,10 @@ class ForexRandom(ForexBase):
         price = np.zeros((batch_size, self.sequence_size))
 
         for batch in range(batch_size):
-            offset = int(random.random() * (self.test_size - self.sequence_size))
+            offset = int(random.random() * (self.test_size - self.sequence_size - 1))
 
             X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
-            price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 1]
+            price[batch, :] = self.price_test[offset + 1: (offset + self.sequence_size) + 1, 1]
 
         return X, price
 
