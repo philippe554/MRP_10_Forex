@@ -302,7 +302,7 @@ def simulate_real_test(sess, test_window):
 	transaction_fee = (capital / 100000) * commission
 
 	# Parameters
-	min_buy_signals = 1  # Wait for N buy signals before buying
+	min_buy_signals = 3  # Wait for N buy signals before buying
 
 	# Loop all test data
 	position = 0
@@ -353,6 +353,8 @@ def simulate_real_test(sess, test_window):
 			sold.append(offset + pso.sequenceSize)
 			position = 0
 			num_buy = 0
+		elif not buy:
+			num_buy = 0
 
 		offset += 1
 		profit.append(total_profit)
@@ -379,6 +381,7 @@ def simulate_real_test(sess, test_window):
 	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
 				 "\n\ttotal profit/loss: " + str(total_profit) +
 				 "\n\ttotal trades: " + str(len(sold)) +
+				 "\n\tavg trades per hour: " + str(len(sold)/(len(profit)/60)) +
 				 "\n\tavg profit per trade: " + str(total_profit/len(sold)) +
 				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
 
