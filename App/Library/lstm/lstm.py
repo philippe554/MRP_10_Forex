@@ -318,6 +318,19 @@ def simulate_real_test(sess, test_window):
 		if offset % 10000 == 0 and offset > 0:
 			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit)
 
+		# Skip weekends (close open positions and skip to next week)
+		batch_delta = test_price[offset+pso.sequenceSize,0] - test_price[offset,0]
+		if batch_delta.total_seconds() > pso.sequenceSize*(60+10):
+			# Close any open positions
+			if position>0:
+				total_profit += (capital * (test_price[offset + pso.sequenceSize, 4] - position)) - transaction_fee
+				sold.append(offset + pso.sequenceSize)
+				position = 0
+				num_buy = 0
+			# Skip to next week
+			offset += pso.sequenceSize+1
+			continue
+
 		# Get the next sequence
 		X = [test_TA[offset:offset + pso.sequenceSize]]
 
@@ -400,8 +413,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-		# simulate_real_test(sess, forex.test_size)
-		simulate_real_test(sess, 50000)
+		simulate_real_test(sess, forex.test_size)
+		# simulate_real_test(sess, 50000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
