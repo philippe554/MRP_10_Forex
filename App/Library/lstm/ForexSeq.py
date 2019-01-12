@@ -32,6 +32,9 @@ class ForexSeq(ForexBase):
 
         return X, price
 
+    def reset_stats(self):
+        return {}
+
     def calculate_profit(self, price, Y):
         """
                 Calculate the profit of this period

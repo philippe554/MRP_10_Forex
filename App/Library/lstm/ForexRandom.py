@@ -29,6 +29,9 @@ class ForexRandom(ForexBase):
 
         return X, price
 
+    def reset_stats(self):
+        return {}
+
     def calculate_profit(self, price, Y):
         batch_size = len(price)
         position_cost = np.ones(batch_size) * 0.0002

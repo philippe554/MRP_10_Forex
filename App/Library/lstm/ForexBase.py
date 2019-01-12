@@ -27,6 +27,7 @@ class ForexBase:
         self.sequence_overlap = sequence_overlap
         self.output_size = output_size
         self.test_offset = 0
+        self.stats = {}
 
         try:
             with open(settings.cachePath + '/cache_v2.p', 'rb') as cacheFile:
@@ -87,6 +88,9 @@ class ForexBase:
 
     def get_random_offset(self):
         return 0
+
+    def reset_stats(self):
+        return {}
 
     def get_X_train(self):
         X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))

@@ -83,6 +83,7 @@ if settings.useParameters:
         forex = forex_type()
 else:
     forex = forex_type()
+forex.reset_stats()
 
 inputSize = len(forex.technical_indicators)
 
@@ -198,9 +199,9 @@ def run_model(sess, X, price):
     return f, n_positions
 
 
-def debug_output(meta, f, n_positions):
+def debug_output(meta, f, n_positions, stats=None):
     if settings.forexType == 'overlap':
-        print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
+        print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats(), stats)
     else:
         print(meta, "avg profit:", "%.7f" % np.mean(f), "avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
 
@@ -211,18 +212,19 @@ def train_step(sess, e, b):
     X, price = forex.get_X_train()
 
     f, n_positions = run_model(sess, X, price)
+    stats = forex.reset_stats()
 
     pso.update(-f)
 
     d2 = datetime.datetime.now()
     delta = d2 - d1
     debug_output("Train " + str(e) + "-" + str(b) + " [" + "%.2f" % (delta.total_seconds() * 1000) + "ms] :", f,
-                 n_positions)
+                 n_positions, stats)
 
 
 def test_step(sess, draw=False):
     # Run test on a larger batch
-    test_size = 3000
+    test_size = 5000
     X, price = forex.get_X_test(test_size)
 
     if settings.forexType == 'seq':
@@ -232,11 +234,12 @@ def test_step(sess, draw=False):
         return f
     else:
         f, n_positions = run_model_test(sess, X, price, draw)
+        stats = forex.reset_stats()
 
         avg_profit = np.mean(f)
         avg_trades = np.mean(n_positions)
         profit_per_trade = avg_profit / avg_trades
-        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:", "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades)
+        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:", "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades, stats)
         return f, n_positions
 
 
