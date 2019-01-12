@@ -117,3 +117,20 @@ class ForexRandom(ForexBase):
     def calculate_profit_test(self, price, Y, draw):
         # TODO: Implement method
         return self.calculate_profit(price, Y)
+
+    def evaluate_output(self, Y):
+        # TODO: Implement, just taking last column for now
+        buy = False
+        sell = False
+
+        # Check last column
+        if Y[0, -1, 0] > 0:
+            buy = True
+        if Y[0, -1, 1] > 0:
+            sell = True
+        if buy and sell:
+            # If both signals are on, do nothing
+            buy = False
+            sell = False
+
+        return buy, sell

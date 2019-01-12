@@ -258,6 +258,7 @@ with tf.Session() as sess:
 						sold.append(i)
 						balance += (capital * (pricedata['bidopen'][i] - position)) - transaction_fee
 						position = 0
+						num_buy = 0
 
 				# Draw
 				if drawEnabled:

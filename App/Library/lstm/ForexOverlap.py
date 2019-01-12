@@ -116,7 +116,7 @@ class ForexOverlap(ForexBase):
 			# Force some trades by punishing non-trade outputs
 			if position_counts[batch] == 0:
 				self.stats['numNonTrade'] += 1
-				balance[batch] = -(.2 * max_profit)
+				balance[batch] = -(1.0 * max_profit)
 
 			# Sell sequence is always on or always off
 			if np.min(sell_sequence) > 0:
@@ -188,7 +188,24 @@ class ForexOverlap(ForexBase):
 
 
 	def calculate_profit_test(self, price, Y, draw, start_capital=50000):
-		return self.calculate_profit(price, Y, draw)
+		return self.calculate_profit(price, Y, True, draw)
+
+
+	def evaluate_output(self, Y):
+		buy = False
+		sell = False
+
+		# Check last column
+		if Y[0, -1, 0] > 0:
+			buy = True
+		if Y[0, -1, 1] > 0:
+			sell = True
+		if buy and sell:
+			# If both signals are on, do nothing
+			buy = False
+			sell = False
+
+		return buy, sell
 
 # def calculate_profit_test(self, price, Y, draw, start_capital=50000):
 #     # return self.calculate_profit(price, Y, test=True, draw=draw)

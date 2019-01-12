@@ -104,6 +104,12 @@ class ForexBase:
 
         return X, price
 
+    def evaluate_output(self, Y):
+        buy = False
+        sell = False
+
+        return buy, sell
+
     def calculate_profit(self, price, Y):
         return 0
 
