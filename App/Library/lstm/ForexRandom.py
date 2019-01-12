@@ -128,9 +128,5 @@ class ForexRandom(ForexBase):
             buy = True
         if Y[0, -1, 1] > 0:
             sell = True
-        if buy and sell:
-            # If both signals are on, do nothing
-            buy = False
-            sell = False
 
         return buy, sell

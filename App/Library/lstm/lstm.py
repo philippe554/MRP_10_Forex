@@ -8,12 +8,9 @@ if any("rwthfs" in s for s in sys.path):
 drawEnabled = False
 try:
 	import matplotlib.pyplot as plt
-	from mpl_finance import candlestick_ohlc
-	from matplotlib import dates as mdates
-
 	drawEnabled = True
 except ImportError:
-	print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
+	print("Drawing plots is disabled, make sure you have the matplotlib module installed")
 
 import datetime
 import pickle
@@ -274,6 +271,104 @@ def save_model():
 		pickle.dump(pso, output)
 	print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
+def simulate_real_test(sess, test_window):
+	"""
+		Simulates realtime trading using the provided data window
+		current PSO best particle is used
+		test_step uses the same window that is used during training, this should be a larger window and give a better estimate of real profit
+	"""
+
+	d1 = datetime.datetime.now()
+	print('\033[94m' + "=== Real test: simulating real trading ===")
+
+	# Retrieve the test data
+	test_TA = forex.TA_test
+	test_price = forex.price_test
+
+	# Fit the window
+	test_TA = test_TA[forex.test_size-test_window:]
+	test_price = test_price[forex.test_size-test_window:]
+	print("Test window: ", test_price[0,0].strftime("%Y-%m-%d %H:%I:%S"), " - ", test_price[-1,0].strftime("%Y-%m-%d %H:%I:%S"))
+
+	# Load the best particle
+	w = pso.get_best_particle()
+	ws = np.split(w, np.cumsum(variableSizes))[:-1]
+	for i in range(len(ws)):
+		variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
+
+	# Constants
+	commission = 4  # Dollar per 100k traded
+	capital = 50000
+	transaction_fee = (capital / 100000) * commission
+
+	# Parameters
+	min_buy_signals = 1  # Wait for N buy signals before buying
+
+	# Loop all test data
+	position = 0
+	bought = []
+	sold = []
+	profit = []
+	total_profit = 0
+	offset = 0
+	num_buy = 0
+	total_batches = test_window - pso.sequenceSize
+	print("Starting test run on " + str(total_batches) + " consecutive batches")
+	while offset < total_batches:
+		if offset % 10000 == 0 and offset > 0:
+			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit)
+
+		# Get the next sequence
+		X = [test_TA[offset:offset + pso.sequenceSize]]
+
+		# Run the lstm on the sequence
+		Y = sess.run(y, feed_dict={x: X})
+
+		# Handle output (this can be different for each type, as long as the output is to buy or sell)
+		buy, sell = forex.evaluate_output(Y)
+
+		# Handle signals
+		if position == 0 and buy and not sell:
+			num_buy += 1
+			if num_buy >= min_buy_signals:
+				# Open a new position at the current rate (close)
+				bought.append(offset + pso.sequenceSize)
+				position = test_price[offset + pso.sequenceSize, 4]
+		elif position != 0 and sell:
+			# Close the position using the current rate (close)
+			total_profit += (capital * (test_price[offset + pso.sequenceSize, 4] - position)) - transaction_fee
+			sold.append(offset + pso.sequenceSize)
+			position = 0
+			num_buy = 0
+
+		offset += 1
+		profit.append(total_profit)
+
+	# Debug plot
+	if drawEnabled:
+		plt.plot(test_price[pso.sequenceSize:, 4], 'k-')
+		plt.plot(bought, test_price[bought, 4].tolist(), 'r+', label='buy signal')
+		plt.plot(sold, test_price[sold, 4].tolist(), 'bx', label='buy signal')
+		plt.legend()
+		plt.ylabel("EUR/USD")
+		plt.xlabel("2018")
+		plt.title("Gross profit/loss: " + "%.3f" % total_profit)
+		plt.show()
+
+		plt.plot(profit, 'r-')
+		plt.ylabel("Profit")
+		plt.xlabel("Time")
+		plt.title("Gross profit/loss: " + "%.3f" % total_profit)
+		plt.show()
+
+	d2 = datetime.datetime.now()
+	delta = d2 - d1
+	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
+				 "\n\ttotal profit/loss: " + str(total_profit) +
+				 "\n\ttotal trades: " + str(len(sold)) +
+				 "\n\tavg profit per trade: " + str(total_profit/len(sold)) +
+				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
+
 
 def train():
 	test_every = 5  # Run the test every N iterations
@@ -305,108 +400,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-
-		# Load the best particle
-		print(" === Loading best particle")
-		w = pso.get_best_particle()
-		ws = np.split(w, np.cumsum(variableSizes))[:-1]
-		for i in range(len(ws)):
-			variables[i].load(ws[i].reshape(variables[i].get_shape().as_list()), sess)
-
-		# Retrieve the test data
-		test_TA = forex.TA_test
-		test_price = forex.price_test
-
-		# Constants
-		commission = 4  # Dollar per 100k traded
-		capital = 50000
-		transaction_fee = (capital / 100000) * commission
-
-		# Parameters
-		min_buy_signals = 1  # Wait for N buy signals before buying
-		max_test_size = 0 # Use the N most recent samples, set to 0 to use all test data
-
-		# Loop all test data
-		position = 0
-		bought = []
-		sold = []
-		profit = []
-		total_profit = 0
-		start_time = time.time()
-		offset = 0
-		num_buy = 0
-		total_batches = forex.test_size-pso.sequenceSize
-		print(" === Started test run on " + str(total_batches) + " sequences")
-		if max_test_size > 0:
-			offset = total_batches - max_test_size
-		while offset < total_batches:
-			if offset % 10000 == 0:
-				print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit)
-
-			# Get the next sequence
-			X = [test_TA[offset:offset+pso.sequenceSize]]
-
-			# Run the lstm on the sequence
-			Y = sess.run(y, feed_dict={x: X})
-
-			# Handle output (this can be different for each type, as long as the output is to buy or sell)
-			buy, sell = forex.evaluate_output(Y)
-
-			# Handle signals
-			if position == 0 and buy:
-				num_buy += 1
-				if num_buy >= min_buy_signals:
-					# Open a new position at the current rate (close)
-					bought.append(offset+pso.sequenceSize)
-					position = test_price[offset+pso.sequenceSize, 4]
-			elif position != 0 and sell:
-				# Close the position using the current rate (close)
-				total_profit += (capital * (test_price[offset+pso.sequenceSize, 4] - position)) - transaction_fee
-				sold.append(offset+pso.sequenceSize)
-				position = 0
-				num_buy = 0
-
-			offset += 1
-			profit.append(total_profit)
-
-		# Debug plot
-		if drawEnabled:
-			graph_offset = 0
-			if max_test_size > 0:
-				graph_offset = forex.test_size - max_test_size
-			plt.plot(test_price[pso.sequenceSize+graph_offset:, 4], 'k-')
-			plt.plot(np.subtract(bought, graph_offset).tolist(), test_price[bought, 4].tolist(), 'r+', label='buy signal')
-			plt.plot(np.subtract(sold, graph_offset).tolist(), test_price[sold, 4].tolist(), 'bx', label='buy signal')
-			plt.legend()
-			plt.ylabel("EUR/USD")
-			plt.xlabel("2018")
-			plt.title(
-				"Gross profit/loss: " + "%.3f" % total_profit)
-			plt.show()
-
-			plt.plot(profit, 'r-')
-			plt.ylabel("Profit")
-			plt.xlabel("Time")
-			plt.title(
-				"Gross profit/loss: " + "%.3f" % total_profit)
-			plt.show()
-			temp = None  # Breakpoint here
-
-		t_time = int(time.time() - start_time)
-		minutes = int(t_time / 60)
-		seconds = t_time % 60
-		print("Total profit after testing:", "%.5f" % total_profit)
-		print("Testing finished in", minutes, "minutes", seconds, "seconds")
-
-	# plt.subplot(2, 1, 1)
-	# plt.plot(forex.price_test)
-	# plt.title("Data from price_test")
-	#
-	# plt.subplot(2, 1, 2)
-	# plt.title("Data from get_X_test")
-	# plt.plot(prices)
-	# plt.show()
-
+		# simulate_real_test(sess, forex.test_size)
+		simulate_real_test(sess, 50000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
