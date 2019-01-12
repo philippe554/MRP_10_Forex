@@ -25,8 +25,8 @@ from App.Library.lstm.PSO import PSO
 from App.Helpers.LiveTA import LiveTA
 
 # Path to the saved model, should be a child of settings.modelPath
-# pso_path = "/Saved/10-1-2351"
-pso_path = "/Saved/11-1-1943"
+# pso_path = "/Saved/11-1-1943"
+pso_path = "/Saved/12-1-1144"
 
 # If simulate is set to true, the loaded model will be executed on live data using overlapping windows (similar to testing but on live data)
 # If simulate is set to false, the loaded model will be used to do live trading without overlapping windows (used for actual trading)
@@ -39,6 +39,7 @@ try:
 	print("     PSO loaded with parameters:")
 	pso.print_hyper_parameters()
 except Exception as e:
+	traceback.print_exc()
 	print("     Failed to load PSO, Exiting..")
 	quit()
 
@@ -195,6 +196,7 @@ with tf.Session() as sess:
 					if error_count > max_errors:
 						debug_output("Caught exception while retrieving live data. terminating trade loop...")
 						terminate_all()
+					time.sleep(5)
 				attempt_now = dt.datetime.now()
 				attempt_delta = attempt_now - attempt_start
 				if not received and attempt_delta.total_seconds() > attempt_timeout:

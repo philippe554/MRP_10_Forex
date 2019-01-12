@@ -13,30 +13,31 @@ class ForexRandom(ForexBase):
             offset = int(random.random() * (self.train_size - self.sequence_size))
 
             X[batch, :, :] = self.TA_train[offset: (offset + self.sequence_size), :]
-            price[batch, :] = self.price_train[offset: (offset + self.sequence_size), 0]
+            price[batch, :] = self.price_train[offset: (offset + self.sequence_size), 1]
 
         return X, price
 
-    def get_X_test(self):
-        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
-        price = np.zeros((self.batch_size, self.sequence_size))
+    def get_X_test(self, batch_size):
+        X = np.zeros((batch_size, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((batch_size, self.sequence_size))
 
-        for batch in range(self.batch_size):
+        for batch in range(batch_size):
             offset = int(random.random() * (self.test_size - self.sequence_size))
 
             X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
-            price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 0]
+            price[batch, :] = self.price_test[offset: (offset + self.sequence_size), 1]
 
         return X, price
 
     def calculate_profit(self, price, Y):
-        position_cost = np.ones(self.batch_size) * 0.0002
+        batch_size = len(price)
+        position_cost = np.ones(batch_size) * 0.0002
         positions_total = 0.0
-        pips_gained = np.zeros(self.batch_size)
-        position_long = np.zeros(self.batch_size)
-        position_short = np.zeros(self.batch_size)
-        position_long_open = np.zeros(self.batch_size)
-        position_short_open = np.zeros(self.batch_size)
+        pips_gained = np.zeros(batch_size)
+        position_long = np.zeros(batch_size)
+        position_short = np.zeros(batch_size)
+        position_long_open = np.zeros(batch_size)
+        position_short_open = np.zeros(batch_size)
 
         for i in range(self.sequence_size):
             open_long_index = Y[:, i, 0] > position_long
@@ -71,7 +72,7 @@ class ForexRandom(ForexBase):
         position_short[close_short_index] = 0
         positions_total += np.sum(close_short_index)
 
-        return np.mean(pips_gained), positions_total / self.batch_size
+        return np.mean(pips_gained), positions_total / batch_size
 
     def calculate_profit_check(self, price, Y):
         position_cost = 0.0002

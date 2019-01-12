@@ -20,7 +20,7 @@ from App.Library.lstm.PSO import PSO
 
 if settings.useParameters:
     if settings.newModel:
-        pso = PSO()
+        pso = PSO(settings.forexType)
         print("New PSO created")
     else:
         try:
@@ -78,7 +78,7 @@ if settings.useParameters:
     elif settings.forexType == "overlap":
         forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
     elif settings.forexType == "seq":
-        forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+        forex = ForexSeq(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
     else:
         forex = forex_type()
 else:
@@ -199,7 +199,10 @@ def run_model(sess, X, price):
 
 
 def debug_output(meta, f, n_positions):
-    print(meta, "avg profit:", "%.7f" % np.mean(f), "avg pos:", "%.2f" % np.mean(n_positions), pso.getStats())
+    if settings.forexType == 'overlap':
+        print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
+    else:
+        print(meta, "avg profit:", "%.7f" % np.mean(f), "avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
 
 
 def train_step(sess, e, b):
@@ -218,12 +221,23 @@ def train_step(sess, e, b):
 
 
 def test_step(sess, draw=False):
-    X, price = forex.get_X_test()
+    # Run test on a larger batch
+    test_size = 3000
+    X, price = forex.get_X_test(test_size)
 
-    f, n_positions = run_model_test(sess, X, price, draw)
+    if settings.forexType == 'seq':
+        # TODO show seq test output
+        f = run_model_test(sess, X, price, draw)
+        print("=== TEST === TODO: show seq test output")
+        return f
+    else:
+        f, n_positions = run_model_test(sess, X, price, draw)
 
-    debug_output("Test:", f, n_positions)
-    return f, n_positions
+        avg_profit = np.mean(f)
+        avg_trades = np.mean(n_positions)
+        profit_per_trade = avg_profit / avg_trades
+        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:", "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades)
+        return f, n_positions
 
 
 def save_model():
@@ -232,6 +246,7 @@ def save_model():
     print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
 
+test_every = 5
 def train():
     with tf.Session() as sess:
         number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
@@ -244,8 +259,8 @@ def train():
             for b in range(number_of_batches):
                 train_step(sess, e, b)
 
-                if b % 50 == 0 and b > 0:
-                    test_step(sess, draw=False)
+                if b % test_every == 0 and b > 0:
+                    test_step(sess, draw=True)
                     save_model()
             t_time = int(time.time() - start_time)
             minutes = int(t_time / 60)

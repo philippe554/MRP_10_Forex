@@ -17,17 +17,17 @@ class ForexSeq(ForexBase):
                 self.offset = 0
 
             X[batch, :] = self.TA_train[self.offset: (self.offset + self.sequence_size)]
-            price[batch, :] = self.price_train[self.offset: (self.offset + self.sequence_size), 0]
+            price[batch, :] = self.price_train[self.offset: (self.offset + self.sequence_size), 1]
             self.offset += self.sequence_size
 
         return X, price
 
-    def get_X_test(self):
+    def get_X_test(self, batch_size):
         X = np.zeros((1, self.sequence_size, len(self.technical_indicators)))
         price = np.zeros((1, self.sequence_size))
 
         X[0, :] = self.TA_test[self.test_offset: (self.test_offset + self.sequence_size)]
-        price[0, :] = self.price_test[self.test_offset: (self.test_offset + self.sequence_size), 0]
+        price[0, :] = self.price_test[self.test_offset: (self.test_offset + self.sequence_size), 1]
         self.test_offset += 1
 
         return X, price
@@ -40,8 +40,9 @@ class ForexSeq(ForexBase):
                 as a bullish indicator and the bottom as a bear indicator
                 :return:
                 """
-        assert list(np.shape(price)) == [self.batch_size, self.sequence_size]
-        assert list(np.shape(Y)) == [self.batch_size, self.sequence_size, self.output_size]
+        batch_size = len(price)
+        assert list(np.shape(price)) == [batch_size, self.sequence_size]
+        assert list(np.shape(Y)) == [batch_size, self.sequence_size, self.output_size]
         output = Y.round()
 
         """
@@ -61,7 +62,7 @@ class ForexSeq(ForexBase):
         money = start_money
         n_positions = 0
 
-        for batch in range(self.batch_size):
+        for batch in range(batch_size):
             for time_step in range(self.sequence_size):
                 bull_bear_indicators = output[batch, time_step]
 
@@ -112,7 +113,7 @@ class ForexSeq(ForexBase):
         self.offset = int(random.random() * (self.train_size - self.sequence_size))
         print("New offset set to {:,}. DB size is {:,}.".format(self.offset, self.train_size))
 
-    def calculate_profit_test(self, price, Y):
+    def calculate_profit_test(self, price, Y, draw):
         assert list(np.shape(price)) == [1, self.sequence_size]
         assert list(np.shape(Y)) == [1, self.sequence_size, self.output_size]
         bull_bear_indicators = Y.round()[0, -1, :]

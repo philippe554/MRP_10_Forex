@@ -1,6 +1,7 @@
 import pickle
 
 import numpy as np
+import pandas as pd
 
 from App.Helpers.AccessTaDB import AccessDB
 from App.Library.Settings import settings
@@ -28,7 +29,7 @@ class ForexBase:
         self.test_offset = 0
 
         try:
-            with open(settings.cachePath + '/cache.p', 'rb') as cacheFile:
+            with open(settings.cachePath + '/cache_v2.p', 'rb') as cacheFile:
                 cache = pickle.load(cacheFile)
 
                 self.TA_train = cache["TA_train"]
@@ -43,11 +44,15 @@ class ForexBase:
         except:
             db_access = AccessDB()
 
-            print("Loading TA database into RAM...")
+            print("Loading TA database into RAM... (version 2)")
             TA = db_access.get_column(self.technical_indicators).values
 
-            print("Loading price database into RAM...")
-            price = db_access.get_column(["barOPENBid"]).values
+            print("Loading price database into RAM... (version 2)")
+            price = db_access.get_column(['DateTimeStamp', 'BarOPENBid', 'BarHIGHBid', 'BarLOWBid', 'BarCLOSEBid'])
+
+            # Parse datetime
+            price['DateTimeStamp'] = pd.to_datetime(price['DateTimeStamp'], format='%Y%m%d %H%M%S')
+            price = price.values
 
             testMinutes = 60 * 24 * 200
 
@@ -75,7 +80,7 @@ class ForexBase:
             cache["price_train"] = self.price_train
             cache["price_test"] = self.price_test
 
-            with open(settings.cachePath + '/cache.p', 'wb') as cacheFile:
+            with open(settings.cachePath + '/cache_v2.p', 'wb') as cacheFile:
                 pickle.dump(cache, cacheFile)
 
         print("Database loaded")
@@ -89,16 +94,16 @@ class ForexBase:
 
         return X, price
 
-    def get_X_test(self):
-        X = np.random.rand(self.batch_size, self.sequence_size, len(self.technical_indicators))
-        price = np.random.rand(self.batch_size, self.sequence_size)
+    def get_X_test(self, batch_size):
+        X = np.random.rand(batch_size, self.sequence_size, len(self.technical_indicators))
+        price = np.random.rand(batch_size, self.sequence_size)
 
         return X, price
 
     def calculate_profit(self, price, Y):
         return 0
 
-    def calculate_profit_test(self, price, Y):
+    def calculate_profit_test(self, price, Y, draw):
         return 0
 
     def restart_offset_random(self):

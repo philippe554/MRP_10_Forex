@@ -3,7 +3,7 @@ import subprocess
 from datetime import datetime as dt
 
 class PSO:
-    def __init__(self):
+    def __init__(self, forexType):
         # Version info
         try:
             self.revision = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
@@ -12,6 +12,7 @@ class PSO:
             self.revision = ""
             self.branch = ""
         self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.forexType = forexType
 
         self.l1Size = 4
         self.l2Size = 8
@@ -31,6 +32,7 @@ class PSO:
         print("====================")
         print("initialized =", self.date)
         print("branch =", self.branch, "@", self.revision)
+        print("forexType =", self.forexType)
         print("l1Size =", self.l1Size, "/ l2Size =", self.l2Size, "/ lstmSize =", self.lstmSize, "/ outSize =", self.outputSize)
         print("sequenceSize =", self.sequenceSize, "/ sequenceOverlap =", self.sequenceOverlap)
         print("batchSize =", self.batchSize, "/ epochs =", self.amountOfEpochs)
@@ -97,8 +99,8 @@ class PSO:
     def getStats(self):
         stats = {}
         stats["best"] = self.best_swarm_index
-        stats["bestProfit"] = "%.3f" % -self.best_swarm_cost
-        stats["bestProfitCurrent"] = "%.3f" % -self.cost[self.best_swarm_index]  # How much profit did the best particle make in the current iteration
+        stats["bestCost"] = "%.3f" % self.best_swarm_cost
+        stats["bestCurrentCost"] = "%.3f" % self.cost[self.best_swarm_index]  # How much profit did the best particle make in the current iteration
         stats["rogue"] = self.rogueParticle
         stats["avgPos"] = "%.5f" % np.mean(self.pos)
         stats["varPos"] = "%.5f" % np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
