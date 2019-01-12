@@ -226,7 +226,7 @@ def train_step(sess, e, b):
 
 def test_step(sess, draw=False):
     # Run test on a larger batch
-    test_size = forex.batch_size
+    test_size = 3000
     X, price = forex.get_X_test(test_size)
 
     if settings.forexType == 'seq':
