@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.finance import candlestick_ohlc
+from mpl_finance import candlestick_ohlc
 from matplotlib import dates as mdates
 
 from App.Library.lstm.ForexBase import *
@@ -93,7 +93,7 @@ class ForexOverlap(ForexBase):
 
 			# Add some heuristics
 			# profit/loss should be a function of price movement (e.g. profit is more impressive if there is little movement)
-			diffs = np.diff(price_overlap[:, 1])
+			diffs = np.diff(price_overlap[:, 4])
 			movement_up = np.sum(diffs[diffs > 0])
 			# movement_down = np.sum(diffs[diffs < 0])
 			max_profit = (capital * movement_up)

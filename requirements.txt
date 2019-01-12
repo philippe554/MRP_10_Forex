@@ -4,3 +4,4 @@ ta==0.3.7
 pandas
 numpy
 tensorflow
+mpl-finance
