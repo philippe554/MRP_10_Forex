@@ -1,8 +1,14 @@
 import random
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_finance import candlestick_ohlc
-from matplotlib import dates as mdates
+
+drawEnabled = False
+try:
+	import matplotlib.pyplot as plt
+	from mpl_finance import candlestick_ohlc
+	from matplotlib import dates as mdates
+	drawEnabled = True
+except ImportError:
+	print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
 
 from App.Library.lstm.ForexBase import *
 
@@ -126,7 +132,7 @@ class ForexOverlap(ForexBase):
 				balance[batch] = -(.5 * max_profit)
 
 			# Debug plots
-			if draw and not drawn:
+			if drawEnabled and draw and not drawn:
 				# if True and balance[batch] > 0:
 				drawn = True
 				if isinstance(price_overlap[-1, 0], float):

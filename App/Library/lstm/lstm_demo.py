@@ -14,10 +14,16 @@ import traceback
 
 import numpy as np
 import tensorflow as tf
-from matplotlib import pyplot as plt
-from matplotlib.finance import candlestick_ohlc
-from matplotlib import dates as mdates
 import pandas as pd
+
+drawEnabled = False
+try:
+	from matplotlib import pyplot as plt
+	from matplotlib.finance import candlestick_ohlc
+	from matplotlib import dates as mdates
+	drawEnabled = True
+except ImportError:
+	print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
 
 from App.Library.Settings import settings
 from App.Library.lstm.ForexDemo import ForexDemo
@@ -254,31 +260,32 @@ with tf.Session() as sess:
 						position = 0
 
 				# Draw
-				fig, ax = plt.subplots()
-				ax.xaxis_date()
-				ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-				plt.xticks(rotation=45)
-				_ = candlestick_ohlc(ax, pricedata.values, width=.0005, colorup='#64a053', colordown='#cc4b4b', alpha=1)
+				if drawEnabled:
+					fig, ax = plt.subplots()
+					ax.xaxis_date()
+					ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+					plt.xticks(rotation=45)
+					_ = candlestick_ohlc(ax, pricedata.values, width=.0005, colorup='#64a053', colordown='#cc4b4b', alpha=1)
 
-				# Signals
-				ymax = pricedata["bidhigh"].max()
-				ymin = pricedata["bidlow"].min()
-				ax.plot(
-					pricedata['t'][bought],
-					pricedata['bidhigh'][bought] + (ymax-ymin)*.05, 'k+', label='buy signal')
-				ax.plot(
-					pricedata['t'][sold],
-					pricedata['bidhigh'][sold] + (ymax-ymin)*.05, 'bx', label='sell signal')
-				ax.legend()
-				ax.plot(pricedata['t'][np.where(buy_sequence > 0)[0].tolist()], np.full(len(np.where(buy_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.05), 'k+', label='buy signal')
-				ax.plot(pricedata['t'][np.where(sell_sequence > 0)[0].tolist()], np.full(len(np.where(sell_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.1), 'bx', label='sell signal')
+					# Signals
+					ymax = pricedata["bidhigh"].max()
+					ymin = pricedata["bidlow"].min()
+					ax.plot(
+						pricedata['t'][bought],
+						pricedata['bidhigh'][bought] + (ymax-ymin)*.05, 'k+', label='buy signal')
+					ax.plot(
+						pricedata['t'][sold],
+						pricedata['bidhigh'][sold] + (ymax-ymin)*.05, 'bx', label='sell signal')
+					ax.legend()
+					ax.plot(pricedata['t'][np.where(buy_sequence > 0)[0].tolist()], np.full(len(np.where(buy_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.05), 'k+', label='buy signal')
+					ax.plot(pricedata['t'][np.where(sell_sequence > 0)[0].tolist()], np.full(len(np.where(sell_sequence > 0)[0].tolist()), ymin - (ymax-ymin)*.1), 'bx', label='sell signal')
 
-				ax.set_ylabel("EUR/USD")
-				ax.set_xlabel(last_run_start.strftime("%Y-%m-%d") + " UTC")
-				ax.set_title("Gross profit/loss: " + "%.3f" % balance + "$")
-				fig.autofmt_xdate()
-				fig.tight_layout()
-				plt.show()
+					ax.set_ylabel("EUR/USD")
+					ax.set_xlabel(last_run_start.strftime("%Y-%m-%d") + " UTC")
+					ax.set_title("Gross profit/loss: " + "%.3f" % balance + "$")
+					fig.autofmt_xdate()
+					fig.tight_layout()
+					plt.show()
 			else:
 				# TODO: open/close positions
 				debug_output("Model output: ["+str(buy_sequence[0])+", "+str(sell_sequence[0])+"]")
