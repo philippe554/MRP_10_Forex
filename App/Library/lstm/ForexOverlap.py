@@ -76,15 +76,15 @@ class ForexOverlap(ForexBase):
 				if position == 0 and buy_sequence[i] > 0 and sell_sequence[i] == 0 and np.max(sell_sequence[i:]) > 0:
 					num_buy += 1
 					if num_buy >= min_buy_signals:
-						# Open a new position at the current rate
+						# Open a new position at the current rate (bar close)
 						bought.append(i)
-						position = price_overlap[i, 1]
+						position = price_overlap[i, 4]
 						position_counts[batch] += 1
 				elif position != 0 and sell_sequence[i] > 0:
-					# Close the current position
+					# Close the current position (bar close)
 					num_buy = 0
 					sold.append(i)
-					balance[batch] += (capital * (price_overlap[i, 1] - position)) - transaction_fee
+					balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
 					position = 0
 				elif buy_sequence[i] == 0:
 					num_buy = 0
@@ -162,7 +162,7 @@ class ForexOverlap(ForexBase):
 
 				ax.set_ylabel("EUR/USD")
 				ax.set_xlabel(day_label)
-				ax.set_title("Gross profit/loss: " + "%.3f" % gross + "$ [max profit: "+"%.3f" % max_profit+", cost: " + "%.3f" % -balance[batch] + "]")
+				ax.set_title("Gross profit: " + "%.3f" % gross + "$ [max profit: "+"%.3f" % max_profit+", cost: " + "%.3f" % -balance[batch] + "]")
 				fig.autofmt_xdate()
 				fig.tight_layout()
 				plt.show()
