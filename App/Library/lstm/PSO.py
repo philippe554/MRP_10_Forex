@@ -29,7 +29,7 @@ class PSO:
         self.phiG = 0.8
 
     def print_hyper_parameters(self):
-        print("====================")
+        print('\033[94m'+"====================")
         print("initialized =", self.date)
         print("branch =", self.branch, "@", self.revision)
         print("forexType =", self.forexType)
@@ -37,7 +37,7 @@ class PSO:
         print("sequenceSize =", self.sequenceSize, "/ sequenceOverlap =", self.sequenceOverlap)
         print("batchSize =", self.batchSize, "/ epochs =", self.amountOfEpochs)
         print("amountParticles =",self.amountOfParticles, "/ omega =", self.omega, "/ phiP =", self.phiP, " / phiG =", self.phiG)
-        print("====================")
+        print("====================" + '\033[0m')
 
     def reset_particles(self, dims):
         print("Reset PSO")

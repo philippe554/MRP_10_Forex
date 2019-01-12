@@ -238,13 +238,10 @@ def test_step(sess, draw=False):
         f, n_positions = run_model_test(sess, X, price, draw)
         stats = forex.reset_stats()
 
-        # avg_profit = np.mean(f)
-        # avg_trades = np.mean(n_positions)
-        profit_per_trade = f / n_positions
-
-        # Testing in overlap is done considering all the batches as a stream therefore there is no mean to calculate
-        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:",
-              "%.5f" % profit_per_trade, "avg profit:", "%.5f" % f, " avg trades:", "%.3f" % n_positions, stats)
+        avg_profit = np.mean(f)
+        avg_trades = np.mean(n_positions)
+        profit_per_trade = avg_profit / avg_trades
+        print('\033[32m'+"=== TEST === best particle on", test_size, "batches:", "avg profit per trade:", "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades, stats, '\033[0m')
         return f, n_positions
 
 
@@ -270,8 +267,7 @@ def train():
                 train_step(sess, e, b)
 
                 if b % test_every == 0 and b > 0:
-                    # TODO: fix test_step with the new dimensions for price
-                    # test_step(sess, draw=True)
+                    test_step(sess, draw=True)
                     save_model()
             t_time = int(time.time() - start_time)
             minutes = int(t_time / 60)
@@ -303,14 +299,14 @@ def test():
         print("Total profit after testing:", total_profit)
         print("Testing finished in", minutes, "minutes", seconds, "seconds")
 
-        plt.subplot(2, 1, 1)
-        plt.plot(forex.price_test)
-        plt.title("Data from price_test")
-
-        plt.subplot(2, 1, 2)
-        plt.title("Data from get_X_test")
-        plt.plot(prices)
-        plt.show()
+        # plt.subplot(2, 1, 1)
+        # plt.plot(forex.price_test)
+        # plt.title("Data from price_test")
+		#
+        # plt.subplot(2, 1, 2)
+        # plt.title("Data from get_X_test")
+        # plt.plot(prices)
+        # plt.show()
 
 
 if settings.useParameters and settings.test:
@@ -322,5 +318,3 @@ if settings.useParameters and settings.test:
 else:
     print("Training the model...")
     train()
-
-print("ASAS")

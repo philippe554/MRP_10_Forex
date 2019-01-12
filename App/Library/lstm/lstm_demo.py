@@ -23,7 +23,7 @@ try:
 	from matplotlib import dates as mdates
 	drawEnabled = True
 except ImportError:
-	print("Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed")
+	print('\033[93m' + "Drawing plots is disabled, make sure you have the matplotlib and mpl-finance modules installed" + '\033[0m')
 
 from App.Library.Settings import settings
 from App.Library.lstm.ForexDemo import ForexDemo
