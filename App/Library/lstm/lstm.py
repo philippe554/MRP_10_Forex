@@ -11,6 +11,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 from App.Library.Settings import settings
 from App.Library.lstm.ForexOverlap import ForexOverlap
@@ -201,7 +202,8 @@ def run_model(sess, X, price):
 
 def debug_output(meta, f, n_positions, stats=None):
     if settings.forexType == 'overlap':
-        print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats(), stats)
+        print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats(),
+              stats)
     else:
         print(meta, "avg profit:", "%.7f" % np.mean(f), "avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
 
@@ -239,7 +241,8 @@ def test_step(sess, draw=False):
         avg_profit = np.mean(f)
         avg_trades = np.mean(n_positions)
         profit_per_trade = avg_profit / avg_trades
-        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:", "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades, stats)
+        print("=== TEST === best particle on", test_size, "batches:", "avg profit per trade:",
+              "%.5f" % profit_per_trade, "avg profit:", "%.5f" % avg_profit, " avg trades:", "%.3f" % avg_trades, stats)
         return f, n_positions
 
 
@@ -250,6 +253,8 @@ def save_model():
 
 
 test_every = 5
+
+
 def train():
     with tf.Session() as sess:
         number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
@@ -273,13 +278,21 @@ def train():
 
 def test():
     with tf.Session() as sess:
-        number_of_batches = round(forex.test_size - pso.sequenceSize)
-        print("The number of batches is", number_of_batches)
+
         start_time = time.time()
         total_profit = 0
-        for e in range(number_of_batches):
-            f, n_positions = test_step(sess, True)
-            total_profit += np.mean(f)
+        prices = []
+        finished = False
+        while not finished:
+            # TODO: send capital as input to calculate profit
+            X, price = forex.get_X_test()
+            f, n_positions = run_model_test(sess, X, price, True)
+            debug_output("Test:", f, n_positions)
+
+            for p in range(len(price)):
+                prices.extend(price[p])
+            if forex.test_offset + forex.batch_size * (forex.sequence_size + forex.sequence_overlap) > forex.test_size:
+                finished = True
 
         t_time = int(time.time() - start_time)
         minutes = int(t_time / 60)
@@ -287,12 +300,24 @@ def test():
         print("Total profit after testing:", total_profit)
         print("Testing finished in", minutes, "minutes", seconds, "seconds")
 
+        plt.subplot(2, 1, 1)
+        plt.plot(forex.price_test)
+        plt.title("Data from price_test")
+
+        plt.subplot(2, 1, 2)
+        plt.title("Data from get_X_test")
+        plt.plot(prices)
+        plt.show()
+
 
 if settings.useParameters and settings.test:
     if settings.newModel:
         raise Exception("You cannot train a new model")
     print("Testing the model...")
+
     test()
 else:
     print("Training the model...")
     train()
+
+print("ASAS")
