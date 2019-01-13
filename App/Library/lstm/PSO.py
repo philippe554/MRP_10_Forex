@@ -18,9 +18,9 @@ class PSO:
         self.l2Size = 8
         self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 30
+        self.sequenceSize = 60
         self.sequenceOverlap = 120
-        self.batchSize = 100
+        self.batchSize = 1000
         self.amountOfParticles = 100
         self.amountOfEpochs = 100
 

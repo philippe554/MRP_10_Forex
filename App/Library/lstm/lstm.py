@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 from App.Library.Settings import settings
 from App.Library.lstm.ForexOverlap import ForexOverlap
 from App.Library.lstm.ForexRandom import ForexRandom
+from App.Library.lstm.ForexSimple import ForexSimple
 from App.Library.lstm.ForexSeq import ForexSeq
 from App.Library.lstm.PSO import PSO
 
@@ -73,10 +74,13 @@ pso.print_hyper_parameters()
 
 print(" === Initializing forexType")
 def forex_type():
-	type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
+	type = input("Type of Forex class to use: (1) random, (2) simple, (3) sequential or (4) overlap? (1/2/3/4)")
 	if type == 1:
 		print("     forexType: Random")
 		forex = ForexRandom(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+	elif type == 2:
+		print("     forexType: Simple")
+		forex = ForexSimple(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
 	elif type == 2:
 		print("     forexType: Sequential")
 		forex = ForexSeq(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
@@ -90,10 +94,13 @@ def forex_type():
 if settings.useParameters:
 	if settings.forexType == "random":
 		print("     forexType: Random")
-		forex = ForexRandom(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+		forex = ForexSimple(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
 	elif settings.forexType == "overlap":
 		print("     forexType: Overlap")
 		forex = ForexOverlap(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
+	elif settings.forexType == "simple":
+		print("     forexType: Simple")
+		forex = ForexSimple(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
 	elif settings.forexType == "seq":
 		print("     forexType: Sequential")
 		forex = ForexSeq(pso.batchSize, pso.sequenceSize, pso.sequenceOverlap, pso.outputSize)
@@ -222,9 +229,9 @@ def run_model(sess, X, price):
 
 
 def debug_output(meta, f, n_positions, stats=None):
-	if settings.forexType == 'overlap':
-		print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions), pso.getStats(),
-			  stats)
+	if settings.forexType == 'overlap' or settings.forexType == 'simple':
+		print(meta, "avg cost:", "%.7f" % -np.mean(f), ", avg trades:", "%.3f" % np.mean(n_positions),
+			  stats, pso.getStats())
 	else:
 		print(meta, "avg profit:", "%.7f" % np.mean(f), "avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
 
@@ -246,7 +253,7 @@ def train_step(sess, e, b):
 
 
 def test_step(sess, draw=False):
-	test_size = 500  # Run test on a larger batch
+	test_size = 5000  # Run test on a larger batch
 	X, price = forex.get_X_test(test_size)
 
 	if settings.forexType == 'seq':
@@ -391,7 +398,8 @@ def simulate_real_test(sess, test_window):
 
 
 def train():
-	test_every = 50  # Run the test every N iterations
+	test_every = 5  # Run the test every N iterations
+	simulate_every = 2
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
@@ -406,6 +414,8 @@ def train():
 				if b % test_every == 0 and b > 0:
 					test_step(sess, draw=True)
 					save_model()
+				if settings.forexType != 'overlap' and b % simulate_every == 0 and b > 0:
+					simulate_real_test(sess, 300)
 
 			t_time = int(time.time() - start_time)
 			minutes = int(t_time / 60)
@@ -421,7 +431,7 @@ def test():
 	"""
 	with tf.Session() as sess:
 		# simulate_real_test(sess, forex.test_size)
-		simulate_real_test(sess, 10000)
+		simulate_real_test(sess, 500)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
