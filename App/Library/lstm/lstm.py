@@ -3,6 +3,7 @@ import sys
 
 drawEnabled = False
 if any("rwthfs" in s for s in sys.path):
+	print("Expanding pythonpath")
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
 else:
@@ -271,6 +272,7 @@ def save_model():
 		pickle.dump(pso, output)
 	print("Model saved in folder", path_to_save + '/model_parameters.pkl')
 
+
 def simulate_real_test(sess, test_window):
 	"""
 		Simulates realtime trading using the provided data window
@@ -302,7 +304,7 @@ def simulate_real_test(sess, test_window):
 	transaction_fee = (capital / 100000) * commission
 
 	# Parameters
-	min_buy_signals = 3  # Wait for N buy signals before buying
+	min_buy_signals = 1  # Wait for N buy signals before buying
 
 	# Loop all test data
 	position = 0
@@ -316,7 +318,7 @@ def simulate_real_test(sess, test_window):
 	print("Starting test run on " + str(total_batches) + " consecutive batches")
 	while offset < total_batches:
 		if offset % 10000 == 0 and offset > 0:
-			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit)
+			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit, " number of trades: ", len(sold))
 
 		# Skip weekends (close open positions and skip to next week)
 		batch_delta = test_price[offset+pso.sequenceSize,0] - test_price[offset,0]
@@ -341,16 +343,17 @@ def simulate_real_test(sess, test_window):
 		buy, sell = forex.evaluate_output(Y)
 
 		# Handle signals
+		current_rate = test_price[offset + pso.sequenceSize, 4]
 		if position == 0 and buy and not sell:
 			num_buy += 1
 			if num_buy >= min_buy_signals:
 				# Open a new position at the current rate (close)
-				bought.append(offset + pso.sequenceSize)
-				position = test_price[offset + pso.sequenceSize, 4]
+				bought.append(offset)
+				position = current_rate
 		elif position != 0 and sell:
 			# Close the position using the current rate (close)
-			total_profit += (capital * (test_price[offset + pso.sequenceSize, 4] - position)) - transaction_fee
-			sold.append(offset + pso.sequenceSize)
+			total_profit += (capital * (current_rate - position)) - transaction_fee
+			sold.append(offset)
 			position = 0
 			num_buy = 0
 		elif not buy:
@@ -361,9 +364,10 @@ def simulate_real_test(sess, test_window):
 
 	# Debug plot
 	if drawEnabled:
-		plt.plot(test_price[pso.sequenceSize:, 4], 'k-')
-		plt.plot(bought, test_price[bought, 4].tolist(), 'r+', label='buy signal')
-		plt.plot(sold, test_price[sold, 4].tolist(), 'bx', label='buy signal')
+		plot_price = test_price[pso.sequenceSize:, 4]
+		plt.plot(plot_price, 'k-')
+		plt.plot(bought, plot_price[bought].tolist(), 'r+', label='buy signal')
+		plt.plot(sold, plot_price[sold].tolist(), 'bx', label='buy signal')
 		plt.legend()
 		plt.ylabel("EUR/USD")
 		plt.xlabel("2018")
@@ -381,8 +385,8 @@ def simulate_real_test(sess, test_window):
 	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
 				 "\n\ttotal profit/loss: " + str(total_profit) +
 				 "\n\ttotal trades: " + str(len(sold)) +
-				 "\n\tavg trades per hour: " + str(len(sold)/(len(profit)/60)) +
-				 "\n\tavg profit per trade: " + str(total_profit/len(sold)) +
+				 "\n\tavg trades per hour: " + str(len(sold)/max(1,(len(profit)/60))) +
+				 "\n\tavg profit per trade: " + str(total_profit/max(1,len(sold))) +
 				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
 
 
@@ -416,8 +420,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-		simulate_real_test(sess, forex.test_size)
-		# simulate_real_test(sess, 50000)
+		# simulate_real_test(sess, forex.test_size)
+		simulate_real_test(sess, 10000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
