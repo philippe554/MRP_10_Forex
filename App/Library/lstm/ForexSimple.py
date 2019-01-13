@@ -75,7 +75,8 @@ class ForexSimple(ForexBase):
 
 			current_rate = price[i, self.sequence_size - 1] + fee  # Add transaction fee to avoid a 'fake' profit
 			next_candles = price[i, self.sequence_size:]
-			gross_pips = (np.max(next_candles) - current_rate) + (np.min(next_candles) - current_rate)
+			gross_pips = (np.max(next_candles) - current_rate) + (np.min(next_candles) - current_rate)  # Use the next 5 candles
+			# gross_pips = next_candles[0] - current_rate  # Use only the first next candle
 			if gross_pips > 0:
 				green += 1
 				# Next candle is green, model should have bought
@@ -83,6 +84,8 @@ class ForexSimple(ForexBase):
 					profit[i] = gross_pips  # This would have been the gain
 				elif sell:
 					profit[i] = -gross_pips  # Missed out on this
+				else:
+					profit[i] = 0  # Did nothing
 			else:
 				red += 1
 				# Next candle is red, model should have sold
@@ -90,6 +93,8 @@ class ForexSimple(ForexBase):
 					profit[i] = -gross_pips  # Avoided this loss
 				elif buy:
 					profit[i] = gross_pips  # This would have been the loss
+				else:
+					profit[i] = 0  # Did nothing
 
 		self.stats['green'] += green
 		self.stats['red'] += red
@@ -119,7 +124,7 @@ class ForexSimple(ForexBase):
 		buy = np.mean(Y[0, :, 0]) > .5
 		sell = np.mean(Y[0, :, 1]) > .5
 
-		# If both are on, make it a sell
+		# If both are on, do nothing
 		if buy and sell:
 			buy = False
 			sell = False

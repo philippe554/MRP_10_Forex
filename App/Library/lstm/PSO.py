@@ -18,15 +18,15 @@ class PSO:
         self.l2Size = 8
         self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 60
+        self.sequenceSize = 1
         self.sequenceOverlap = 120
-        self.batchSize = 1000
+        self.batchSize = 500
         self.amountOfParticles = 100
         self.amountOfEpochs = 100
 
         self.omega = 0.7
         self.phiP = 0.8
-        self.phiG = 0.6
+        self.phiG = 0.7
 
     def print_hyper_parameters(self):
         print('\033[94m'+"====================")

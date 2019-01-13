@@ -20,7 +20,6 @@ import traceback
 
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 from App.Library.Settings import settings
 from App.Library.lstm.ForexOverlap import ForexOverlap
@@ -322,6 +321,7 @@ def simulate_real_test(sess, test_window):
 	offset = 0
 	num_buy = 0
 	total_batches = test_window - pso.sequenceSize
+	outputs = np.zeros((total_batches, 2))
 	print("Starting test run on " + str(total_batches) + " consecutive batches")
 	while offset < total_batches:
 		if offset % 10000 == 0 and offset > 0:
@@ -348,6 +348,7 @@ def simulate_real_test(sess, test_window):
 
 		# Handle output (this can be different for each type, as long as the output is to buy or sell)
 		buy, sell = forex.evaluate_output(Y)
+		outputs[offset] = [buy, sell]
 
 		# Handle signals
 		current_rate = test_price[offset + pso.sequenceSize, 4]
@@ -398,8 +399,8 @@ def simulate_real_test(sess, test_window):
 
 
 def train():
-	test_every = 5  # Run the test every N iterations
-	simulate_every = 2
+	test_every = 20  # Run the test every N iterations
+	simulate_every = 30
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
@@ -415,7 +416,7 @@ def train():
 					test_step(sess, draw=True)
 					save_model()
 				if settings.forexType != 'overlap' and b % simulate_every == 0 and b > 0:
-					simulate_real_test(sess, 300)
+					simulate_real_test(sess, 20000)
 
 			t_time = int(time.time() - start_time)
 			minutes = int(t_time / 60)
@@ -430,8 +431,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-		# simulate_real_test(sess, forex.test_size)
-		simulate_real_test(sess, 500)
+		simulate_real_test(sess, forex.test_size)
+		# simulate_real_test(sess, 5000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
