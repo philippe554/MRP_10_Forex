@@ -2,10 +2,12 @@
 import sys
 
 drawEnabled = False
+cluster = False
 if any("rwthfs" in s for s in sys.path):
 	print("Expanding pythonpath")
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
+	cluster = True
 else:
 	try:
 		import matplotlib.pyplot as plt
@@ -273,10 +275,10 @@ def test_step(sess, draw=False):
 		return f, n_positions
 
 
-def save_model(epoch=0, batch=0, profit=0):
+def save_model(epoch=None, batch=0, profit=0):
 	fname = 'model_parameters'
-	if epoch != 0:
-		fname += '-e' + str(epoch) + '-b' + str(batch) + '-p' + str(round(profit))
+	if cluster and epoch is not None:
+		fname += '_e' + str(epoch) + '_b' + str(batch) + '_p' + str(round(profit))
 	with open(path_to_save + '/'+fname+'.pkl', 'wb') as output:
 		pickle.dump(pso, output)
 	print("Model saved in folder", path_to_save + '/'+fname+'.pkl')
@@ -404,7 +406,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 
 def train():
 	test_every = 20  # Run the test every N iterations
-	simulate_every = 2
+	simulate_every = 50
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
