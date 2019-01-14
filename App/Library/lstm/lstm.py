@@ -273,13 +273,16 @@ def test_step(sess, draw=False):
 		return f, n_positions
 
 
-def save_model():
-	with open(path_to_save + '/model_parameters.pkl', 'wb') as output:
+def save_model(epoch=0, batch=0, profit=0):
+	fname = 'model_parameters'
+	if epoch != 0:
+		fname += '-e' + str(epoch) + '-b' + str(batch) + '-p' + str(round(profit))
+	with open(path_to_save + '/'+fname+'.pkl', 'wb') as output:
 		pickle.dump(pso, output)
-	print("Model saved in folder", path_to_save + '/model_parameters.pkl')
+	print("Model saved in folder", path_to_save + '/'+fname+'.pkl')
 
 
-def simulate_real_test(sess, test_window):
+def simulate_real_test(sess, test_window, e=0, b=0):
 	"""
 		Simulates realtime trading using the provided data window
 		current PSO best particle is used
@@ -397,10 +400,11 @@ def simulate_real_test(sess, test_window):
 				 "\n\tavg profit per trade: " + str(total_profit/max(1,len(sold))) +
 				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
 
+	save_model(e, b, total_profit)
 
 def train():
 	test_every = 20  # Run the test every N iterations
-	simulate_every = 30
+	simulate_every = 2
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
@@ -415,9 +419,8 @@ def train():
 
 				if b % test_every == 0 and b > 0:
 					test_step(sess, draw=True)
-					save_model()
 				if settings.forexType != 'overlap' and b % simulate_every == 0 and b > 0:
-					simulate_real_test(sess, 20000)
+					simulate_real_test(sess, 50000, e, b)
 
 			t_time = int(time.time() - start_time)
 			minutes = int(t_time / 60)

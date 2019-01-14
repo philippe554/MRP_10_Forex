@@ -18,7 +18,7 @@ class PSO:
         self.l2Size = 8
         self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 1
+        self.sequenceSize = 30
         self.sequenceOverlap = 120
         self.batchSize = 500
         self.amountOfParticles = 100
@@ -86,25 +86,32 @@ class PSO:
         # self.cost = self.cost * 0.8 + cost * 0.2
         self.cost = cost # uncomment to use old method
 
+        # Cost is always a positive number
+        self.cost = 2 ** self.cost
+
         for i in range(self.amountOfParticles):
             if self.cost[i] < self.best_cost[i]:
                 self.best_pos[i, :] = self.pos[i, :]
                 self.best_cost[i] = self.cost[i]
 
-                if self.best_swarm_cost is None or self.cost[i] < self.best_swarm_cost:
-                    self.best_swarm_pos = self.pos[i, :]
-                    self.best_swarm_cost = self.cost[i]
-                    self.best_swarm_index = i
+            if self.best_swarm_cost is None or self.cost[i] < self.best_swarm_cost:
+                self.best_swarm_pos = self.pos[i, :]
+                self.best_swarm_cost = self.cost[i]
+                self.best_swarm_index = i
+
+        # Decay best cost
+        self.best_swarm_cost *= 1.01
+
 
     def getStats(self):
         stats = {}
         stats["best"] = self.best_swarm_index
-        stats["bestCost"] = "%.3f" % self.best_swarm_cost
-        stats["bestCurrentCost"] = "%.3f" % self.cost[self.best_swarm_index]  # How much profit did the best particle make in the current iteration
+        stats["bestCost"] = "%.5f" % self.best_swarm_cost
+        stats["bestCurrentCost"] = "%.5f" % self.cost[self.best_swarm_index]  # How much profit did the best particle make in the current iteration
         stats["rogue"] = self.rogueParticle
         stats["avgPos"] = "%.5f" % np.mean(self.pos)
         stats["varPos"] = "%.5f" % np.mean(np.power(self.pos - np.mean(self.pos, axis=1, keepdims=True), 2))
         stats["avgBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_pos, 2), axis=1)))
         stats["avgSwarmBestDistance"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.pos - self.best_swarm_pos, 2), axis=1)))
-        stats["avgVelocity"] = "%.3f" % np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
+        stats["avgVelocity"] = "%.5f" % np.mean(np.sqrt(np.sum(np.power(self.vel, 2), axis=1)))
         return stats

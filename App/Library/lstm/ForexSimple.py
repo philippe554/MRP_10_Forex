@@ -51,6 +51,7 @@ class ForexSimple(ForexBase):
 
 		# Counts
 		green = 0
+		flat = 0
 		red = 0
 		num_buy = 0
 		num_sell = 0
@@ -74,10 +75,17 @@ class ForexSimple(ForexBase):
 				inactive += 1
 
 			current_rate = price[i, self.sequence_size - 1] + fee  # Add transaction fee to avoid a 'fake' profit
-			next_candles = price[i, self.sequence_size:]
+			next_candles = price[i, self.sequence_size+1:]
 			gross_pips = (np.max(next_candles) - current_rate) + (np.min(next_candles) - current_rate)  # Use the next 5 candles
 			# gross_pips = next_candles[0] - current_rate  # Use only the first next candle
-			if gross_pips > 0:
+			if abs(gross_pips) < fee:
+				# Movement is minimal, model should do nothing
+				flat += 1
+				if buy or sell:
+					profit[i] = -fee
+				else:
+					profit[i] = fee
+			elif gross_pips > 0:
 				green += 1
 				# Next candle is green, model should have bought
 				if buy:
@@ -105,13 +113,14 @@ class ForexSimple(ForexBase):
 
 		# Punish outputs that dont do anything
 		if num_sell == 0 or num_buy == 0:
-			return -50, 1
+			return -1, 1
 
 		# Check ratio
 		buy_ratio = num_buy/green
+		flat_ratio = inactive/flat
 		sell_ratio = num_sell/red
 		profit_mean = (np.mean(profit) * capital)
-		batch_profit = profit_mean * buy_ratio * sell_ratio
+		batch_profit = profit_mean * buy_ratio * sell_ratio * flat_ratio
 
 		return batch_profit, 1
 

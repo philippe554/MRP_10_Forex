@@ -4,7 +4,7 @@ forexconnect = dict(
         token='a459da43b4dd47cdc23b8762ccc3d54043d78465'
     ),
     lstm=dict(
-        # Demo account camiel2
+        # Demo account camiel2 D25687831-9678
         token='953daaba402acf5241cfb354c9d95e394e9c5089'
     )
 )
