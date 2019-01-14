@@ -410,6 +410,7 @@ def train():
 			start_time = time.time()
 
 			for b in range(number_of_batches):
+				sys.stdout.flush()
 				train_step(sess, e, b)
 
 				if b % test_every == 0 and b > 0:
@@ -443,3 +444,5 @@ if settings.useParameters and settings.test:
 else:
 	print("Training the model...")
 	train()
+
+sys.stdout.flush()
