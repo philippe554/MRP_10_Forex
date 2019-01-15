@@ -8,6 +8,8 @@ import tensorflow as tf
 
 from App.Library.lstm.ForexGD import ForexGD
 
+# EXAMPLE : -p -i "C:\dev\data\forex\data\price_hist_ta.db" -c "C:\dev\data\forex\model"
+
 l1Size = 30
 l2Size = 20
 lstmSize = 20
@@ -76,14 +78,24 @@ with tf.Session() as sess:
 	while True:
 		lossList = []
 		priceDiffList = []
+		hitList = []
+		hitListPred = []
+		acc = []
 		for i in range(50):
 			X, price = forex.get_X_train()
 			priceDiffList.append(np.abs(price))
-			loss, _ = sess.run([lossCalc, trainStep], feed_dict={x: X, y: price})
+			hitList.append(np.mean(np.abs(price) > 1))
+
+			loss, _, pred = sess.run([lossCalc, trainStep, Y], feed_dict={x: X, y: price})
+
+			hitListPred.append(np.mean(np.abs(pred) > 0.4))
+
+			acc.extend(price[pred > 0.4] > 0.2)
+			acc.extend(price[pred < -0.4] < -0.2)
 
 			lossList.append(loss)
 
 		X, price = forex.get_X_test()
 		loss = sess.run([lossCalc], feed_dict={x: X, y: price})
 
-		print("Train loss:", np.mean(lossList), "Test loss:", loss, "Avg price diff:", np.mean(priceDiffList), np.std(priceDiffList))
+		print("Train loss:", np.mean(lossList), "Test loss:", loss, "Acc:", np.mean(acc), "Avg price diff:", np.mean(priceDiffList), "Hit freq:", np.mean(hitList), np.mean(hitListPred))

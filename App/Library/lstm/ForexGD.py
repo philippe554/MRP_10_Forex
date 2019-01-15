@@ -13,14 +13,14 @@ class ForexGD(ForexBase):
         price = np.zeros((self.batch_size, 1))
 
         for batch in range(self.batch_size):
-            offset = int(random.random() * (trainPeriod - self.sequence_size - 10))
+            offset = int(random.random() * (trainPeriod - self.sequence_size - 15))
 
             getFrom = self.train_size - trainPeriod + offset
             getTo = self.train_size - trainPeriod + offset + self.sequence_size
 
             X[batch, :, :] = self.TA_train[getFrom : getTo, :]
             finalPrice = self.price_train[getTo, 1]
-            price[batch, 0] = (self.price_train[getTo + 10, 1] - finalPrice) * scaler
+            price[batch, 0] = (self.price_train[getTo + 15, 1] - finalPrice) * scaler
 
         return X, price
 
@@ -29,11 +29,11 @@ class ForexGD(ForexBase):
         price = np.zeros((self.batch_size, 1))
 
         for batch in range(self.batch_size):
-            offset = int(random.random() * (self.test_size - self.sequence_size - 10))
+            offset = int(random.random() * (self.test_size - self.sequence_size - 15))
 
             X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]
             finalPrice = self.price_test[offset + self.sequence_size, 1]
-            price[batch, 0] = (self.price_test[offset + self.sequence_size + 10, 1] - finalPrice) * scaler
+            price[batch, 0] = (self.price_test[offset + self.sequence_size + 15, 1] - finalPrice) * scaler
 
         return X, price
 
