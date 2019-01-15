@@ -16,6 +16,7 @@ lstmSize = 20
 outputSize = 1
 sequenceSize = 60
 batchSize = 500
+epochs = 200
 
 forex = ForexGD(batchSize, sequenceSize, -1, outputSize)
 inputSize = len(forex.technical_indicators)
@@ -75,13 +76,18 @@ trainStep = tf.train.AdamOptimizer(1e-4).minimize(lossCalc)
 with tf.Session() as sess:
 	sess.run(tf.global_variables_initializer())
 
-	while True:
+	batchesPerEpoch = int(forex.trainPeriod / (batchSize * inputSize))
+	print("Batches per epoch:", batchesPerEpoch)
+
+	for e in range(epochs):
+		d1 = datetime.datetime.now()
+
 		lossList = []
 		priceDiffList = []
 		hitList = []
 		hitListPred = []
 		testAcc = []
-		for i in range(50):
+		for i in range(batchesPerEpoch):
 			X, price = forex.get_X_train()
 			priceDiffList.append(np.abs(price))
 			hitList.append(np.mean(np.abs(price) > 1))
@@ -98,8 +104,17 @@ with tf.Session() as sess:
 		X, price = forex.get_X_test(2000)
 		loss, pred = sess.run([lossCalc, Y], feed_dict={x: X, y: price})
 
-		trainAcc = []
-		trainAcc.extend(price[pred > 0.4] > 0.2)
-		trainAcc.extend(price[pred < -0.4] < -0.2)
+		trainHitFreq = np.mean(pred > 0.4)
 
-		print("Loss:", np.mean(lossList), "-", loss[0], "Acc:", np.mean(testAcc), "-", np.mean(trainAcc), "Avg price diff:", np.mean(priceDiffList), "Hit freq:", np.mean(hitList), np.mean(hitListPred))
+		trainAccProfit = []
+		trainAccProfit.extend(price[pred > 0.4] > 0.2)
+		trainAccProfit.extend(price[pred < -0.4] < -0.2)
+
+		trainAccNoLoss = []
+		trainAccNoLoss.extend(price[pred > 0.4] > 0.04)
+		trainAccNoLoss.extend(price[pred < -0.4] < -0.04)
+
+		d2 = datetime.datetime.now()
+		time = "%.2f" % ((d2 - d1).total_seconds() * 1000) + "ms"
+
+		print(e, time, ": Loss:", np.mean(lossList), "-", loss, "Acc profit:", np.mean(testAcc), "-", np.mean(trainAccProfit), "No loss:", np.mean(trainAccNoLoss), "Freq:", trainHitFreq)

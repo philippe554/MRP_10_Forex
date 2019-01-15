@@ -4,19 +4,19 @@ from App.Library.lstm.ForexBase import *
 
 scaler = 1000.0
 
-trainPeriod = 60 * 24 * 700
-
 class ForexGD(ForexBase):
+
+    trainPeriod = 60 * 24 * 700
 
     def get_X_train(self):
         X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
         price = np.zeros((self.batch_size, 1))
 
         for batch in range(self.batch_size):
-            offset = int(random.random() * (trainPeriod - self.sequence_size - 15))
+            offset = int(random.random() * (self.trainPeriod - self.sequence_size - 15))
 
-            getFrom = self.train_size - trainPeriod + offset
-            getTo = self.train_size - trainPeriod + offset + self.sequence_size
+            getFrom = self.train_size - self.trainPeriod + offset
+            getTo = self.train_size - self.trainPeriod + offset + self.sequence_size
 
             X[batch, :, :] = self.TA_train[getFrom : getTo, :]
             finalPrice = self.price_train[getTo, 1]
