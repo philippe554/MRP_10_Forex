@@ -1,5 +1,6 @@
 # Fix pythonpath if executing on cluster
 import sys
+import datetime
 
 drawEnabled = False
 cluster = False
@@ -8,6 +9,11 @@ if any("rwthfs" in s for s in sys.path):
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/.local/lib/python3.6/site-packages')
 	sys.path.insert(0, '/rwthfs/rz/cluster/home/dh060408/MRP_10_Forex/')
 	cluster = True
+
+	import os
+	date = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+	pid = os.getpid()
+	output_dir = "/" + date + "_" + str(pid)
 else:
 	try:
 		import matplotlib.pyplot as plt
@@ -15,7 +21,6 @@ else:
 	except ImportError:
 		print("Drawing plots is disabled, make sure you have the matplotlib module installed")
 
-import datetime
 import pickle
 import time
 import traceback
@@ -72,6 +77,12 @@ else:
 				raise Exception(e)
 
 pso.print_hyper_parameters()
+
+if cluster:
+	path_to_save += output_dir
+	print("Saving output models to: " + path_to_save)
+	if not os.path.exists(path_to_save):
+		os.makedirs(path_to_save)
 
 print(" === Initializing forexType")
 def forex_type():
@@ -301,7 +312,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	# Fit the window
 	test_TA = test_TA[forex.test_size-test_window:]
 	test_price = test_price[forex.test_size-test_window:]
-	print("Test window: ", test_price[0,0].strftime("%Y-%m-%d %H:%I:%S"), " - ", test_price[-1,0].strftime("%Y-%m-%d %H:%I:%S"))
+	print("Test window: ", test_price[0,0].strftime("%Y-%m-%d %H:%M:%S"), " - ", test_price[-1,0].strftime("%Y-%m-%d %H:%M:%S"))
 
 	# Load the best particle
 	w = pso.get_best_particle()

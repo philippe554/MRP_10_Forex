@@ -1,9 +1,5 @@
 #!/usr/bin/env zsh
 
-### Vars
-JOB_DIR = $HOME/MRP_10_Forex/Jobs/
-OUTPUT_DIR = Output/%J/
-
 ### Ensure that you use DKE resources
 #BSUB -P um_dke
 
@@ -14,13 +10,8 @@ OUTPUT_DIR = Output/%J/
 #BSUB -N
 #BSUB -u cjnj.kerkhofs@student.maastrichtuniversity.nl
 
-### Create output dir
-if [ ! -d "$OUTPUT_DIR" ]
-then mkdir "$OUTPUT_DIR"
-fi
-
 ### File / path where STDOUT will be written, the %J is the job id
-#BSUB -o %OUTPUT_DIR/stdout
+#BSUB -o Output/Testing_MRP10.%J_%I
 
 ### Request the time you need for execution in minutes
 ### The format for the parameter is: [hour:]minute,
@@ -40,4 +31,4 @@ export PATH=$HOME/.local/bin:$PATH
 
 # start non-interactive batch job
 echo "Starting lstm training"
-python3.6 lstm.py -p -n -m "%JOB_DIR%OUTPUT_DIR" -i "%HOME/Data/price_hist_ta.db" -f simple -c "%HOME/Temp"
+python3.6 lstm.py -p -n -m "/rwthfs/rz/cluster/home/dh060408/Temp" -i "/rwthfs/rz/cluster/home/dh060408/Data/price_hist_ta.db" -f simple -c "/rwthfs/rz/cluster/home/dh060408/Temp"

@@ -14,9 +14,9 @@ class PSO:
         self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
         self.forexType = forexType
 
-        self.l1Size = 4
-        self.l2Size = 8
-        self.lstmSize = 6
+        self.l1Size = 8
+        self.l2Size = 12
+        self.lstmSize = 8
         self.outputSize = 2
         self.sequenceSize = 30
         self.sequenceOverlap = 120
@@ -25,8 +25,8 @@ class PSO:
         self.amountOfEpochs = 100
 
         self.omega = 0.7
-        self.phiP = 0.8
-        self.phiG = 0.7
+        self.phiP = 0.7
+        self.phiG = 0.8
 
     def print_hyper_parameters(self):
         print('\033[94m'+"====================")
@@ -100,7 +100,7 @@ class PSO:
                 self.best_swarm_index = i
 
         # Decay best cost
-        self.best_swarm_cost *= 1.01
+        self.best_swarm_cost *= 1.001
 
 
     def getStats(self):
