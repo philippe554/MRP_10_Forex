@@ -24,11 +24,16 @@ class ForexGD(ForexBase):
 
         return X, price
 
-    def get_X_test(self):
-        X = np.zeros((self.batch_size, self.sequence_size, len(self.technical_indicators)))
-        price = np.zeros((self.batch_size, 1))
+    def get_X_test(self, batch_size = -1):
+        if batch_size == -1:
+            bs = self.batch_size
+        else:
+            bs = batch_size
 
-        for batch in range(self.batch_size):
+        X = np.zeros((bs, self.sequence_size, len(self.technical_indicators)))
+        price = np.zeros((bs, 1))
+
+        for batch in range(bs):
             offset = int(random.random() * (self.test_size - self.sequence_size - 15))
 
             X[batch, :, :] = self.TA_test[offset: (offset + self.sequence_size), :]

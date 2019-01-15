@@ -80,7 +80,7 @@ with tf.Session() as sess:
 		priceDiffList = []
 		hitList = []
 		hitListPred = []
-		acc = []
+		testAcc = []
 		for i in range(50):
 			X, price = forex.get_X_train()
 			priceDiffList.append(np.abs(price))
@@ -90,12 +90,16 @@ with tf.Session() as sess:
 
 			hitListPred.append(np.mean(np.abs(pred) > 0.4))
 
-			acc.extend(price[pred > 0.4] > 0.2)
-			acc.extend(price[pred < -0.4] < -0.2)
+			testAcc.extend(price[pred > 0.4] > 0.2)
+			testAcc.extend(price[pred < -0.4] < -0.2)
 
 			lossList.append(loss)
 
-		X, price = forex.get_X_test()
-		loss = sess.run([lossCalc], feed_dict={x: X, y: price})
+		X, price = forex.get_X_test(2000)
+		loss, pred = sess.run([lossCalc, Y], feed_dict={x: X, y: price})
 
-		print("Train loss:", np.mean(lossList), "Test loss:", loss, "Acc:", np.mean(acc), "Avg price diff:", np.mean(priceDiffList), "Hit freq:", np.mean(hitList), np.mean(hitListPred))
+		trainAcc = []
+		trainAcc.extend(price[pred > 0.4] > 0.2)
+		trainAcc.extend(price[pred < -0.4] < -0.2)
+
+		print("Loss:", np.mean(lossList), "-", loss[0], "Acc:", np.mean(testAcc), "-", np.mean(trainAcc), "Avg price diff:", np.mean(priceDiffList), "Hit freq:", np.mean(hitList), np.mean(hitListPred))
