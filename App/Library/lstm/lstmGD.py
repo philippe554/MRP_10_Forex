@@ -13,7 +13,7 @@ l2Size = 20
 lstmSize = 20
 outputSize = 1
 sequenceSize = 60
-batchSize = 200
+batchSize = 500
 
 forex = ForexGD(batchSize, sequenceSize, -1, outputSize)
 inputSize = len(forex.technical_indicators)
@@ -78,7 +78,7 @@ with tf.Session() as sess:
 		priceDiffList = []
 		for i in range(50):
 			X, price = forex.get_X_train()
-			priceDiffList.append(np.mean(price))
+			priceDiffList.append(np.abs(price))
 			loss, _ = sess.run([lossCalc, trainStep], feed_dict={x: X, y: price})
 
 			lossList.append(loss)
@@ -86,4 +86,4 @@ with tf.Session() as sess:
 		X, price = forex.get_X_test()
 		loss = sess.run([lossCalc], feed_dict={x: X, y: price})
 
-		print("Train loss:", np.mean(lossList), "Test loss:", loss, "Avg price diff:", np.mean(priceDiffList))
+		print("Train loss:", np.mean(lossList), "Test loss:", loss, "Avg price diff:", np.mean(priceDiffList), np.std(priceDiffList))
