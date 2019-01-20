@@ -14,19 +14,19 @@ class PSO:
         self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
         self.forexType = forexType
 
-        self.l1Size = 8
-        self.l2Size = 12
-        self.lstmSize = 8
+        self.l1Size = 4
+        self.l2Size = 8
+        self.lstmSize = 6
         self.outputSize = 2
-        self.sequenceSize = 30
-        self.sequenceOverlap = 120
-        self.batchSize = 500
-        self.amountOfParticles = 100
+        self.sequenceSize = 5
+        self.sequenceOverlap = 30
+        self.batchSize = 200
+        self.amountOfParticles = 1000
         self.amountOfEpochs = 100
 
         self.omega = 0.7
-        self.phiP = 0.7
-        self.phiG = 0.8
+        self.phiP = 0.6
+        self.phiG = 0.7
 
     def print_hyper_parameters(self):
         print('\033[94m'+"====================")
@@ -87,7 +87,7 @@ class PSO:
         self.cost = cost # uncomment to use old method
 
         # Cost is always a positive number
-        self.cost = 2 ** self.cost
+        # self.cost = 2 ** self.cost
 
         for i in range(self.amountOfParticles):
             if self.cost[i] < self.best_cost[i]:
@@ -100,7 +100,7 @@ class PSO:
                 self.best_swarm_index = i
 
         # Decay best cost
-        self.best_swarm_cost *= 1.001
+        # self.best_swarm_cost *= 1.001
 
 
     def getStats(self):

@@ -28,6 +28,9 @@ class ForexBase:
         self.output_size = output_size
         self.test_offset = 0
         self.stats = {}
+        self.avgaccuracy = []
+        self.bestaccuracy = []
+        self.testaccuracy = []
 
         try:
             with open(settings.cachePath + '/cache_v2.p', 'rb') as cacheFile:

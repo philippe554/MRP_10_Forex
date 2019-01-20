@@ -248,6 +248,9 @@ def debug_output(meta, f, n_positions, stats=None):
 		print(meta, "avg profit:", "%.7f" % np.mean(f), "avg trades:", "%.3f" % np.mean(n_positions), pso.getStats())
 
 
+avg_profits = []
+best = []
+num_profitable = []
 def train_step(sess, e, b):
 	d1 = datetime.datetime.now()
 
@@ -256,7 +259,25 @@ def train_step(sess, e, b):
 	f, n_positions = run_model(sess, X, price)
 	stats = forex.reset_stats()
 
+	avg_profits.append(np.mean(f))
+	num_profitable.append(len(f[f > 0]))
+	best.append(max(f))
 	pso.update(-f)
+
+	if b!=0 and b % 1000 == 0:
+		tsg=2
+
+	# plt.plot(best, 'k', label='Best profit')
+	# plt.plot(avg_profits, 'cornflowerblue', label='Average profit')
+	# plt.legend()
+	# plt.xlabel('Training iteration')
+	# plt.ylabel('Profit')
+	# plt.show()
+
+	# n = 20
+	# ret = np.cumsum(avg_profits, dtype=float)
+	# ret[n:] = ret[n:] - ret[:-n]
+	# ma = ret[n - 1:] / n
 
 	d2 = datetime.datetime.now()
 	delta = d2 - d1
@@ -302,6 +323,10 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 		test_step uses the same window that is used during training, this should be a larger window and give a better estimate of real profit
 	"""
 
+	if settings.forexType == 'overlap' and b !=0:
+		save_model(e, b, 0)
+		return True
+
 	d1 = datetime.datetime.now()
 	print('\033[94m' + "=== Real test: simulating real trading ===")
 
@@ -324,6 +349,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	commission = 4  # Dollar per 100k traded
 	capital = 50000
 	transaction_fee = (capital / 100000) * commission
+	pip_fee = commission / 100000  # Transaction fee in pips
 
 	# Parameters
 	min_buy_signals = 1  # Wait for N buy signals before buying
@@ -336,6 +362,14 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	total_profit = 0
 	offset = 0
 	num_buy = 0
+
+	# Accuracy measures
+	last_signal = ''
+	last_rate = 0
+	buyhits = 0
+	sellhits = 0
+	flathits = 0
+
 	total_batches = test_window - pso.sequenceSize
 	outputs = np.zeros((total_batches, 2))
 	print("Starting test run on " + str(total_batches) + " consecutive batches")
@@ -366,8 +400,15 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 		buy, sell = forex.evaluate_output(Y)
 		outputs[offset] = [buy, sell]
 
-		# Handle signals
 		current_rate = test_price[offset + pso.sequenceSize, 4]
+		if last_signal == 'flat' and abs(current_rate-last_rate) < pip_fee:
+			flathits += 1
+		elif last_signal == 'buy' and current_rate+pip_fee > last_rate:
+			buyhits += 1
+		elif last_signal == 'sell' and current_rate+pip_fee <= last_rate:
+			sellhits += 1
+
+		# Handle signals
 		if position == 0 and buy and not sell:
 			num_buy += 1
 			if num_buy >= min_buy_signals:
@@ -385,6 +426,15 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 
 		offset += 1
 		profit.append(total_profit)
+
+		# Save to measure accuracy
+		if buy and not sell:
+			last_signal = 'buy'
+		elif sell:
+			last_signal = 'sell'
+		else:
+			last_signal = 'flat'
+		last_rate = current_rate
 
 	# Debug plot
 	if drawEnabled:
@@ -409,6 +459,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
 				 "\n\ttotal profit/loss: " + str(total_profit) +
 				 "\n\ttotal trades: " + str(len(sold)) +
+				 "\n\tcandle accuracy: " + str((buyhits+sellhits) / total_batches) +
 				 "\n\tavg trades per hour: " + str(len(sold)/max(1,(len(profit)/60))) +
 				 "\n\tavg profit per trade: " + str(total_profit/max(1,len(sold))) +
 				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
@@ -416,8 +467,8 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	save_model(e, b, total_profit)
 
 def train():
-	test_every = 20  # Run the test every N iterations
-	simulate_every = 50
+	test_every = 5  # Run the test every N iterations
+	simulate_every = 20
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
@@ -432,8 +483,8 @@ def train():
 
 				if b % test_every == 0 and b > 0:
 					test_step(sess, draw=True)
-				if settings.forexType != 'overlap' and b % simulate_every == 0 and b > 0:
-					simulate_real_test(sess, 50000, e, b)
+				if b % simulate_every == 0 and b > 0:
+					simulate_real_test(sess, 5000, e, b)
 
 			t_time = int(time.time() - start_time)
 			minutes = int(t_time / 60)
@@ -448,8 +499,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-		simulate_real_test(sess, forex.test_size)
-		# simulate_real_test(sess, 5000)
+		# simulate_real_test(sess, forex.test_size)
+		simulate_real_test(sess, 5000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:

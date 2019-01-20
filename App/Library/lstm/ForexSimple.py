@@ -39,10 +39,23 @@ class ForexSimple(ForexBase):
 			'inactive': 0,
 			'green': 0,
 			'red': 0,
+			'test': False,
+			'acc': []
 		}
+
+		if 'green' in old_stats and old_stats['green'] > 0:
+			if old_stats['test'] == True:
+				self.testaccuracy.append(np.max(old_stats['acc']))
+			else:
+				self.avgaccuracy.append(np.mean(old_stats['acc']))
+				self.bestaccuracy.append(np.max(old_stats['acc']))
+
 		return old_stats
 
-	def calculate_profit(self, price, Y):
+	def get_ratio(self, x, y):
+		return min(x, y) / max(x, y)
+
+	def calculate_profit(self, price, Y, test=False):
 		# Very simple: if buy signal on and next candle is green > good stuff
 		batch_size = len(price)
 		profit = np.zeros(batch_size)
@@ -64,19 +77,19 @@ class ForexSimple(ForexBase):
 
 			if buy and sell:
 				buysell += 1
-				buy = False
-				sell = False
-			else:
+				# buy = False
+				# sell = False
+			elif not buy and not sell:
 				inactive += 1
 
 			current_rate = price[i, self.sequence_size - 1] + fee  # Add transaction fee to avoid a 'fake' profit
 			next_candles = price[i, self.sequence_size:]
-			gross_pips = (np.max(next_candles) - current_rate) + (np.min(next_candles) - current_rate)  # Use the next 5 candles
-			# gross_pips = next_candles[0] - current_rate  # Use only the first next candle
+			# gross_pips = (np.max(next_candles) - current_rate) + (np.min(next_candles) - current_rate)  # Use the next 5 candles
+			gross_pips = next_candles[0] - current_rate  # Use only the first next candle
 			if gross_pips > 0:
 				green += 1
 				# Next candle is green, model should have bought
-				if buy:
+				if buy and not sell:
 					num_buy += 1
 					profit[i] = gross_pips  # This would have been the gain
 				elif sell:
@@ -86,7 +99,7 @@ class ForexSimple(ForexBase):
 			else:
 				red += 1
 				# Next candle is red, model should have sold
-				if sell:
+				if sell and not buy:
 					num_sell += 1
 					profit[i] = -gross_pips  # Avoided this loss
 				elif buy:
@@ -100,22 +113,27 @@ class ForexSimple(ForexBase):
 		self.stats['sell'] += num_sell
 		self.stats['buysell'] += buysell
 		self.stats['inactive'] += inactive
+		accuracy = (self.get_ratio(num_buy, green) + self.get_ratio(num_sell, red)) / 2
+		self.stats['acc'].append(accuracy)
+		if test:
+			self.stats['test'] = True
 
 		# Punish outputs that dont do anything
 		if num_sell == 0 or num_buy == 0:
 			return -1, 1
 
 		# Check ratio
-		buy_ratio = num_buy/green
-		sell_ratio = num_sell/red
+		buy_ratio = self.get_ratio(num_buy, green)
+		sell_ratio = self.get_ratio(num_sell, red)
 		profit_mean = (np.mean(profit) * capital)
-		batch_profit = profit_mean * buy_ratio * sell_ratio
+		# batch_profit = profit_mean * buy_ratio * sell_ratio
+		batch_profit = accuracy
 
 		return batch_profit, 1
 
 	def calculate_profit_test(self, price, Y, draw):
 		# TODO: Implement method
-		return self.calculate_profit(price, Y)
+		return self.calculate_profit(price, Y, True)
 
 	def evaluate_output(self, Y):
 		# Mean of all buy and sell signals
@@ -123,8 +141,8 @@ class ForexSimple(ForexBase):
 		sell = np.mean(Y[0, :, 1]) > .5
 
 		# If both are on, do nothing
-		if buy and sell:
-			buy = False
-			sell = False
+		# if buy and sell:
+		# 	buy = False
+		# 	sell = False
 
 		return buy, sell

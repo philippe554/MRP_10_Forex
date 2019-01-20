@@ -136,8 +136,8 @@ class ForexOverlap(ForexBase):
 				balance[batch] = -(.5 * max_profit)
 
 			# Debug plots
-			if drawEnabled and draw and not drawn:
-				# if True and balance[batch] > 0:
+			# if drawEnabled and draw and not drawn:
+			if drawEnabled and draw and not drawn and balance[batch] < 0:
 				drawn = True
 				if isinstance(price_overlap[-1, 0], float):
 					day_label = mdates.num2date(price_overlap[-1, 0]).strftime("%Y-%m-%d") + " UTC"
