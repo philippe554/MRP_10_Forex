@@ -368,7 +368,8 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	last_rate = 0
 	buyhits = 0
 	sellhits = 0
-	flathits = 0
+	green = 0
+	red = 0
 
 	total_batches = test_window - pso.sequenceSize
 	outputs = np.zeros((total_batches, 2))
@@ -401,12 +402,14 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 		outputs[offset] = [buy, sell]
 
 		current_rate = test_price[offset + pso.sequenceSize, 4]
-		if last_signal == 'flat' and abs(current_rate-last_rate) < pip_fee:
-			flathits += 1
-		elif last_signal == 'buy' and current_rate+pip_fee > last_rate:
-			buyhits += 1
-		elif last_signal == 'sell' and current_rate+pip_fee <= last_rate:
-			sellhits += 1
+		if current_rate+pip_fee > last_rate:
+			green += 1
+			if last_signal == 'buy':
+				buyhits += 1
+		elif current_rate+pip_fee <= last_rate:
+			red += 1
+			if last_signal == 'sell':
+				sellhits += 1
 
 		# Handle signals
 		if position == 0 and buy and not sell:
@@ -437,6 +440,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 		last_rate = current_rate
 
 	# Debug plot
+	accuracy = (buyhits/green + sellhits/red) / 2
 	if drawEnabled:
 		plot_price = test_price[pso.sequenceSize:, 4]
 		plt.plot(plot_price, 'k-')
@@ -451,7 +455,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 		plt.plot(profit, 'r-')
 		plt.ylabel("Profit")
 		plt.xlabel("Time")
-		plt.title("Gross profit/loss: " + "%.3f" % total_profit)
+		plt.title("Gross profit/loss: " + "%.3f" % total_profit + ", Accuracy: " + "%.4f" % accuracy + "%")
 		plt.show()
 
 	d2 = datetime.datetime.now()
@@ -459,7 +463,7 @@ def simulate_real_test(sess, test_window, e=0, b=0):
 	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
 				 "\n\ttotal profit/loss: " + str(total_profit) +
 				 "\n\ttotal trades: " + str(len(sold)) +
-				 "\n\tcandle accuracy: " + str((buyhits+sellhits) / total_batches) +
+				 "\n\tcandle accuracy: " + str(accuracy) +
 				 "\n\tavg trades per hour: " + str(len(sold)/max(1,(len(profit)/60))) +
 				 "\n\tavg profit per trade: " + str(total_profit/max(1,len(sold))) +
 				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
@@ -499,8 +503,8 @@ def test():
 	This is how the loaded particle would perform as if it would run in realtime
 	"""
 	with tf.Session() as sess:
-		# simulate_real_test(sess, forex.test_size)
-		simulate_real_test(sess, 5000)
+		simulate_real_test(sess, forex.test_size)
+		# simulate_real_test(sess, 5000)
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
