@@ -14,18 +14,26 @@ if not any("rwthfs" in s for s in sys.path):
 
 from App.Library.lstm.ForexBase import *
 
+
 class ForexOverlap(ForexBase):
 	def get_X_train(self):
 		X = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap, len(self.technical_indicators)))
 		price = np.zeros((self.batch_size, self.sequence_size + self.sequence_overlap, 5), dtype=object)
 
 		for batch in range(self.batch_size):
-			offset = int(random.random() * (self.train_size - (self.sequence_size + self.sequence_overlap)))
+			if self.offset > self.train_size - self.sequence_size:
+				self.offset = 0
 
-			X[batch, :, :] = self.TA_train[offset: (offset + (self.sequence_size + self.sequence_overlap)), :]
-			price[batch, :, :] = self.price_train[offset: (offset + (self.sequence_size + self.sequence_overlap)), :]
+			X[batch, :, :] = self.TA_train[self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
+			price[batch, :, :] = self.price_train[
+								self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
+			self.offset += self.sequence_size
 
 		return X, price
+
+	def restart_offset_random(self):
+		self.offset = int(random.random() * self.test_size)
+		print("New offset to", self.offset)
 
 	def get_X_test(self, batch_size):
 		X = np.zeros((batch_size, self.sequence_size + self.sequence_overlap, len(self.technical_indicators)))
@@ -39,7 +47,6 @@ class ForexOverlap(ForexBase):
 
 		return X, price
 
-
 	def reset_stats(self):
 		old_stats = self.stats.copy()
 		self.stats = {
@@ -52,14 +59,13 @@ class ForexOverlap(ForexBase):
 		}
 		return old_stats
 
-
 	def calculate_profit(self, price, Y, test=False, draw=False):
 		# Basic idea: simulate profit that would be earned in a live environment
 		# Punish outputs that do not trade very often
 		batch_size = len(price)
 
 		drawn = False
-		commission = 4  # Dollar per 100k traded
+		commission = 6  # Dollar per 100k traded
 		capital = 50000
 		transaction_fee = (capital / 100000) * commission
 		min_buy_signals = 1  # Wait for this number of signals before buying
@@ -82,8 +88,7 @@ class ForexOverlap(ForexBase):
 			sold = []
 			num_buy = 0
 			for i in range(self.sequence_overlap):
-				if position == 0 and buy_sequence[i] > 0 and sell_sequence[i] == 0 and np.max(
-						sell_sequence[i:]) > 0:
+				if position == 0 and buy_sequence[i] > 0 and sell_sequence[i] == 0:
 					num_buy += 1
 					if num_buy >= min_buy_signals:
 						# Open a new position at the current rate (bar close)
@@ -99,8 +104,14 @@ class ForexOverlap(ForexBase):
 				elif buy_sequence[i] == 0:
 					num_buy = 0
 
+				if i == self.sequence_overlap - 1 and position != 0:
+					sold.append(i)
+					balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
+					position = 0
+
 			gross = balance[batch]
 
+			"""
 			# Add some heuristics
 			# profit/loss should be a function of price movement (e.g. profit is more impressive if there is little movement)
 			diffs = np.diff(price_overlap[:, 4])
@@ -110,10 +121,12 @@ class ForexOverlap(ForexBase):
 			if balance[batch] > max_profit:
 				print("balance exceeds max profit?")
 			balance[batch] = (balance[batch] / max(1, balance[batch], max_profit)) * 150
+			"""
 
 			# More trades = better
-			balance[batch] *= position_counts[batch]
-
+			if balance[batch] > 0:
+				balance[batch] *= position_counts[batch]
+			"""
 			# Force some trades by punishing non-trade outputs
 			if position_counts[batch] == 0:
 				self.stats['numNonTrade'] += 1
@@ -134,6 +147,7 @@ class ForexOverlap(ForexBase):
 			if np.max(buy_sequence) < 1:
 				self.stats['buyNeverOn'] += 1
 				balance[batch] = -(.5 * max_profit)
+			"""
 
 			# Debug plots
 			if drawEnabled and draw and not drawn:
@@ -173,9 +187,7 @@ class ForexOverlap(ForexBase):
 
 				ax.set_ylabel("EUR/USD")
 				ax.set_xlabel(day_label)
-				ax.set_title(
-					"Gross profit: " + "%.3f" % gross + "$ [max profit: " + "%.3f" % max_profit + ", cost: " + "%.3f" % -
-					balance[batch] + "]")
+				ax.set_title("Gross profit: " + "%.3f" % gross)
 				fig.autofmt_xdate()
 				fig.tight_layout()
 				plt.show()
@@ -187,10 +199,8 @@ class ForexOverlap(ForexBase):
 
 		return np.mean(balance), np.sum(position_counts) / batch_size
 
-
 	def calculate_profit_test(self, price, Y, draw, start_capital=50000):
 		return self.calculate_profit(price, Y, True, draw)
-
 
 	def evaluate_output(self, Y):
 		buy = False

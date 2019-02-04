@@ -14,15 +14,15 @@ class PSO:
         self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
         self.forexType = forexType
 
-        self.l1Size = 4
-        self.l2Size = 8
-        self.lstmSize = 6
+        self.l1Size = 20
+        self.l2Size = 30
+        self.lstmSize = 10
         self.outputSize = 2
-        self.sequenceSize = 30
-        self.sequenceOverlap = 120
-        self.batchSize = 100
+        self.sequenceSize = 60
+        self.sequenceOverlap = 180
+        self.batchSize = 50
         self.amountOfParticles = 100
-        self.amountOfEpochs = 100
+        self.amountOfEpochs = 50
 
         self.omega = 0.7
         self.phiP = 0.8

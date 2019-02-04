@@ -391,7 +391,7 @@ def simulate_real_test(sess, test_window):
 
 
 def train():
-	test_every = 50  # Run the test every N iterations
+	test_every = 10  # Run the test every N iterations
 	with tf.Session() as sess:
 		number_of_batches = round(forex.train_size / (pso.sequenceSize * pso.batchSize))
 		print("The number of batches per epoch is", number_of_batches)
@@ -404,7 +404,7 @@ def train():
 				train_step(sess, e, b)
 
 				if b % test_every == 0 and b > 0:
-					test_step(sess, draw=True)
+					# test_step(sess, draw=True)
 					save_model()
 
 			t_time = int(time.time() - start_time)

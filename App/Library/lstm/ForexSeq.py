@@ -109,8 +109,11 @@ class ForexSeq(ForexBase):
 							position_open = True
 							position_is_long = False
 							price_position_open = price[batch, time_step]
+		profit = money - start_money
+		if profit > 0:
+			profit = n_positions * (money - start_money)
 
-		return money - start_money, n_positions
+		return profit, n_positions
 
 	def restart_offset_random(self):
 		self.offset = int(random.random() * (self.train_size - self.sequence_size))
