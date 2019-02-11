@@ -12,10 +12,8 @@ class ForexBase:
 							"trend_vortex_ind_neg", "trend_trix", "trend_mass_index", "trend_cci", "trend_dpo",
 							"trend_kst", "trend_kst_sig", "trend_kst_diff", "trend_ichimoku_a", "trend_ichimoku_b",
 							"momentum_rsi", "momentum_uo", "momentum_tsi", "momentum_wr", "momentum_stoch",
-							"momentum_ao", "others_dr", "others_dlr", "others_cr", "volatility_atr", "volatility_bbh",
-							"volatility_bbl", "volatility_bbhi", "volatility_bbli", "volatility_kch", "volatility_kcl",
-							"volatility_kchi", "volatility_kcli", "volatility_dch", "volatility_dcl", "volatility_dchi",
-							"volatility_dcli"]
+							"momentum_ao", "volatility_atr", "volatility_bbh", "volatility_bbl", "volatility_kch",
+							"volatility_kcl", "volatility_dch", "volatility_dcl", "BarOPENBid"]
 
 	def __init__(self, batch_size, sequence_size, sequence_overlap, output_size):
 		self.batch_size = batch_size
