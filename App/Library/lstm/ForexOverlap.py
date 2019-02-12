@@ -23,10 +23,16 @@ class ForexOverlap(ForexBase):
 		for batch in range(self.batch_size):
 			if self.offset > self.train_size - self.sequence_size:
 				self.offset = 0
+			try:
+				X[batch, :, :] = self.TA_train[self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
+				price[batch, :, :] = self.price_train[
+									self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
+			except:
+				self.offset = 0
+				X[batch, :, :] = self.TA_train[self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
+				price[batch, :, :] = self.price_train[
+									self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
 
-			X[batch, :, :] = self.TA_train[self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
-			price[batch, :, :] = self.price_train[
-								self.offset: (self.offset + (self.sequence_size + self.sequence_overlap)), :]
 			self.offset += self.sequence_size
 
 		return X, price
