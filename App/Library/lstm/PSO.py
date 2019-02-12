@@ -14,19 +14,19 @@ class PSO:
         self.date = dt.now().strftime("%Y-%m-%d %H:%M:%S")
         self.forexType = forexType
 
-        self.l1Size = 20
-        self.l2Size = 30
-        self.lstmSize = 10
+        self.l1Size = 8
+        self.l2Size = 8
+        self.lstmSize = 20
         self.outputSize = 2
-        self.sequenceSize = 60
+        self.sequenceSize = 30
         self.sequenceOverlap = 180
         self.batchSize = 50
-        self.amountOfParticles = 100
+        self.amountOfParticles = 50
         self.amountOfEpochs = 50
 
-        self.omega = 0.7
-        self.phiP = 0.8
-        self.phiG = 0.6
+        self.omega = 0.9
+        self.phiP = 2
+        self.phiG = 2
 
     def print_hyper_parameters(self):
         print('\033[94m'+"====================")

@@ -83,6 +83,7 @@ class ForexOverlap(ForexBase):
 			self.stats['total'] += 1
 			price_overlap = price[batch, len(price[batch]) - self.sequence_overlap:]
 			position = 0
+			long_position = False
 			buy_sequence = Y[batch, :, 0]
 			sell_sequence = Y[batch, :, 1]
 
@@ -101,18 +102,39 @@ class ForexOverlap(ForexBase):
 						bought.append(i)
 						position = price_overlap[i, 4]
 						position_counts[batch] += 1
-				elif position != 0 and sell_sequence[i] > 0:
-					# Close the current position (bar close)
-					num_buy = 0
-					sold.append(i)
-					balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
-					position = 0
+						long_position = True
+				elif position == 0 and sell_sequence[i] > 0 and buy_sequence[i] == 0:
+					num_buy += 1
+					if num_buy >= min_buy_signals:
+						# Open a new position at the current rate (bar close)
+						bought.append(i)
+						position = price_overlap[i, 4]
+						position_counts[batch] += 1
+						long_position = False
+
+				elif position != 0:
+					if long_position and sell_sequence[i] > 0:
+						# Close the current long position (bar close)
+						num_buy = 0
+						sold.append(i)
+						balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
+						position = 0
+					elif not long_position and buy_sequence[i] > 0:
+						# Close the current short position (bar close)
+						num_buy = 0
+						sold.append(i)
+						balance[batch] += (capital * (position - price_overlap[i, 4])) - transaction_fee
+						position = 0
+
 				elif buy_sequence[i] == 0:
 					num_buy = 0
 
 				if i == self.sequence_overlap - 1 and position != 0:
 					sold.append(i)
-					balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
+					if long_position:
+						balance[batch] += (capital * (price_overlap[i, 4] - position)) - transaction_fee
+					else:
+						balance[batch] += (capital * (position - price_overlap[i, 4])) - transaction_fee
 					position = 0
 
 			gross = balance[batch]

@@ -9,6 +9,7 @@ if any("rwthfs" in s for s in sys.path):
 else:
 	try:
 		import matplotlib.pyplot as plt
+
 		drawEnabled = True
 	except ImportError:
 		print("Drawing plots is disabled, make sure you have the matplotlib module installed")
@@ -72,6 +73,8 @@ else:
 pso.print_hyper_parameters()
 
 print(" === Initializing forexType")
+
+
 def forex_type():
 	type = input("Type of Forex class to use, random, sequential or overlap? (1/2/3)")
 	if type == 1:
@@ -288,9 +291,10 @@ def simulate_real_test(sess, test_window):
 	test_price = forex.price_test
 
 	# Fit the window
-	test_TA = test_TA[forex.test_size-test_window:]
-	test_price = test_price[forex.test_size-test_window:]
-	print("Test window: ", test_price[0,0].strftime("%Y-%m-%d %H:%I:%S"), " - ", test_price[-1,0].strftime("%Y-%m-%d %H:%I:%S"))
+	test_TA = test_TA[forex.test_size - test_window:]
+	test_price = test_price[forex.test_size - test_window:]
+	print("Test window: ", test_price[0, 0].strftime("%Y-%m-%d %H:%I:%S"), " - ",
+		  test_price[-1, 0].strftime("%Y-%m-%d %H:%I:%S"))
 
 	# Load the best particle
 	w = pso.get_best_particle()
@@ -318,19 +322,20 @@ def simulate_real_test(sess, test_window):
 	print("Starting test run on " + str(total_batches) + " consecutive batches")
 	while offset < total_batches:
 		if offset % 10000 == 0 and offset > 0:
-			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit, " number of trades: ", len(sold))
+			print("Progress: ", offset, "/", total_batches, " current profit: ", total_profit, " number of trades: ",
+				  len(sold))
 
 		# Skip weekends (close open positions and skip to next week)
-		batch_delta = test_price[offset+pso.sequenceSize,0] - test_price[offset,0]
-		if batch_delta.total_seconds() > pso.sequenceSize*(60+10):
+		batch_delta = test_price[offset + pso.sequenceSize, 0] - test_price[offset, 0]
+		if batch_delta.total_seconds() > pso.sequenceSize * (60 + 10):
 			# Close any open positions
-			if position>0:
+			if position > 0:
 				total_profit += (capital * (test_price[offset + pso.sequenceSize, 4] - position)) - transaction_fee
 				sold.append(offset + pso.sequenceSize)
 				position = 0
 				num_buy = 0
 			# Skip to next week
-			offset += pso.sequenceSize+1
+			offset += pso.sequenceSize + 1
 			continue
 
 		# Get the next sequence
@@ -383,11 +388,11 @@ def simulate_real_test(sess, test_window):
 	d2 = datetime.datetime.now()
 	delta = d2 - d1
 	print("\n\tTest finished [" + "%.2f" % (delta.total_seconds() * 1000) + "ms]:" +
-				 "\n\ttotal profit/loss: " + str(total_profit) +
-				 "\n\ttotal trades: " + str(len(sold)) +
-				 "\n\tavg trades per hour: " + str(len(sold)/max(1,(len(profit)/60))) +
-				 "\n\tavg profit per trade: " + str(total_profit/max(1,len(sold))) +
-				 "\n\ttotal trade volume: " + str(capital*len(sold)) + '\n\n\033[0m')
+		  "\n\ttotal profit/loss: " + str(total_profit) +
+		  "\n\ttotal trades: " + str(len(sold)) +
+		  "\n\tavg trades per hour: " + str(len(sold) / max(1, (len(profit) / 60))) +
+		  "\n\tavg profit per trade: " + str(total_profit / max(1, len(sold))) +
+		  "\n\ttotal trade volume: " + str(capital * len(sold)) + '\n\n\033[0m')
 
 
 def train():
@@ -410,6 +415,9 @@ def train():
 			t_time = int(time.time() - start_time)
 			minutes = int(t_time / 60)
 			seconds = t_time % 60
+			if pso.omega > 0.4:
+				pso.omega -= 0.5 / pso.amountOfEpochs
+
 			print("Epoch", e, "finished in", minutes, "minutes", seconds, "seconds")
 
 
@@ -422,6 +430,7 @@ def test():
 	with tf.Session() as sess:
 		# simulate_real_test(sess, forex.test_size)
 		simulate_real_test(sess, 10000)
+
 
 if settings.useParameters and settings.test:
 	if settings.newModel:
